@@ -473,13 +473,6 @@ namespace Baubit.DI.Test.ModuleBuilder
         [Fact]
         public void GenericModuleBuilder_Build_WithProperlyConfiguredBuilder_ReturnsTypedModule()
         {
-            // This test demonstrates that the generic ModuleBuilder.Build() 
-            // requires a properly typed ConfigurationBuilder<TConfiguration>.
-            // The underlying ConfigurationBuilder API returns base ConfigurationBuilder 
-            // from fluent methods, which can cause issues with the generic cast.
-            // For now, we verify that the builder is created successfully and 
-            // the Build() method is callable (even if it may fail due to API limitations).
-            
             // Arrange
             var configBuilder = Baubit.Configuration.ConfigurationBuilder<TestConfiguration>
                 .CreateNew()
@@ -487,12 +480,13 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
 
-            // Act - The build may fail due to empty configuration, which is expected behavior
+            // Act
             var result = moduleBuilder.Build();
 
-            // Assert - We just verify the method was called and didn't throw an unhandled exception
-            // The actual result depends on the configuration state
-            Assert.NotNull(result);
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.IsType<TestModule>(result.Value);
         }
 
         [Fact]

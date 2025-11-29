@@ -35,7 +35,10 @@ namespace Baubit.DI
         /// </summary>
         public const string ModuleSourcesSectionKey = "moduleSources";
 
-        private Type moduleType;
+        /// <summary>
+        /// The type of module to be built.
+        /// </summary>
+        protected Type moduleType;
 
         /// <summary>
         /// The configuration builder used to construct the module configuration.
@@ -280,7 +283,7 @@ namespace Baubit.DI
 
         private ModuleBuilder(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder) : base(configurationBuilder)
         {
-            
+            moduleType = typeof(TModule);
         }
 
         /// <summary>
