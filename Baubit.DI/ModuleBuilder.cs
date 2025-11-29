@@ -11,32 +11,33 @@ using System.Reflection;
 
 namespace Baubit.DI
 {
-    public class ModuleBuilder
+    public class ModuleBuilder : IDisposable
     {
         public const string ModuleTypeKey = "type";
-        public const string RootModuleTypeKey = "rootModule";
         public const string ModulesSectionKey = "modules";
         public const string ModuleSourcesSectionKey = "moduleSources";
 
         private Type moduleType;
         protected Baubit.Configuration.ConfigurationBuilder configurationBuilder;
+        private bool disposedValue;
+
         protected ModuleBuilder(Configuration.ConfigurationBuilder configurationBuilder)
         {
             this.configurationBuilder = configurationBuilder;
         }
 
-        public static Result<ModuleBuilder> CreateNew(IConfiguration configuration, bool createRootIfTypeNotDefined = false)
+        public static Result<ModuleBuilder> CreateNew(IConfiguration configuration)
         {
             return Configuration.ConfigurationBuilder
                                 .CreateNew()
                                 .Bind(cb => Result.Try(() => new ModuleBuilder(cb)))
-                                .Bind(moduleBuilder => moduleBuilder.DetermineModuleType(configuration, createRootIfTypeNotDefined)
+                                .Bind(moduleBuilder => moduleBuilder.DetermineModuleType(configuration)
                                                                     .Bind(() => moduleBuilder.WithAdditionaConfigurationSourcesFrom<ModuleBuilder>(configuration))
                                                                     .Bind(_ => moduleBuilder.WithAdditionaConfigurationsFrom<ModuleBuilder>(configuration))
                                                                     .Bind(_ => Result.Ok(moduleBuilder)));
         }
 
-        public static Result<IEnumerable<ModuleBuilder>> CreateMany(IConfiguration configuration, bool createRootIfTypeNotDefined = false)
+        public static Result<IEnumerable<ModuleBuilder>> CreateMany(IConfiguration configuration)
         {
             try
             {
@@ -45,7 +46,7 @@ namespace Baubit.DI
                 {
                     foreach (var moduleSection in moduleSections)
                     {
-                        var moduleBuilder = CreateNew(moduleSection, createRootIfTypeNotDefined).ThrowIfFailed().Value;
+                        var moduleBuilder = CreateNew(moduleSection).ThrowIfFailed().Value;
                         moduleBuilders.Add(moduleBuilder);
                     }
                 })).ThrowIfFailed();
@@ -58,7 +59,7 @@ namespace Baubit.DI
                                                          .CreateNew()
                                                          .Bind(cb => cb.WithAdditionalConfigurationSources(sourcesSection.Get<ConfigurationSource>()))
                                                          .Bind(cb => cb.Build())
-                                                         .Bind(cfg => CreateNew(cfg, false))
+                                                         .Bind(cfg => CreateNew(cfg))
                                                          .ThrowIfFailed()
                                                          .Value;
                         moduleBuilders.Add(moduleBuilder);
@@ -73,13 +74,11 @@ namespace Baubit.DI
             }
         }
 
-        private Result DetermineModuleType(IConfiguration configuration, bool createRootIfTypeNotDefined = false)
+        private Result DetermineModuleType(IConfiguration configuration)
         {
-            return Result.Try(() =>
-            {
-                moduleType = TypeResolver.TryResolveType(configuration[ModuleTypeKey]).ValueOrDefault ??
-                             (createRootIfTypeNotDefined ? TypeResolver.TryResolveType(configuration[RootModuleTypeKey]).ValueOrDefault ?? typeof(RootModule) : null);
-            });
+            return TypeResolver.TryResolveType(configuration[ModuleTypeKey])
+                               .Bind(type => Result.Try(() => moduleType = type))
+                               .Bind(_ => Result.FailIf(moduleType == null, string.Empty));
         }
 
         protected Result<TModuleBuilder> WithAdditionaConfigurationSourcesFrom<TModuleBuilder>(params IConfiguration[] configurations) where TModuleBuilder : ModuleBuilder
@@ -100,14 +99,34 @@ namespace Baubit.DI
 
         protected Result<TModule> Build<TModule>(Type[] paramsTypeFilter, object[] ctorParams) where TModule : IModule
         {
-            return Result.Try(() =>
+            try
             {
-                return (TModule)moduleType.GetConstructor(BindingFlags.Instance | BindingFlags.Public,
-                                                          default,
-                                                          paramsTypeFilter,
-                                                          default)
-                                          .Invoke(ctorParams);
-            });
+                return FailIfDisposed().Bind(() => Result.Try(() =>
+                {
+                    return (TModule)moduleType.GetConstructor(BindingFlags.Instance | BindingFlags.Public,
+                                                              default,
+                                                              paramsTypeFilter,
+                                                              default)
+                                              .Invoke(ctorParams);
+                }));
+            }
+            finally
+            {
+                Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Checks if the builder has been disposed and returns a failed result if so.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Result"/> that is successful if the builder is not disposed;
+        /// otherwise, a failed result with <see cref="ModuleBuilderDisposed"/> reason.
+        /// </returns>
+        private Result FailIfDisposed()
+        {
+            return Result.FailIf(disposedValue, new Error(string.Empty))
+                         .AddReasonIfFailed(new ModuleBuilderDisposed());
         }
 
         #region DirectlyDefinedNestedModules
@@ -149,6 +168,27 @@ namespace Baubit.DI
             return moduleSourcesSection.Exists() ?
                    Result.Ok(moduleSourcesSection) :
                    Result.Fail(Enumerable.Empty<IError>()).WithReason(new ModuleSourcesNotDefined());
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    moduleType = null;
+                    configurationBuilder?.Dispose();
+                    configurationBuilder = null;
+                }
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

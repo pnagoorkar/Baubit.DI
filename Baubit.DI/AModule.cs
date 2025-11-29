@@ -1,13 +1,9 @@
-﻿using Baubit.Configuration;
-using Baubit.Traceability;
+﻿using Baubit.Traceability;
 using FluentResults;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Baubit.DI
@@ -58,31 +54,10 @@ namespace Baubit.DI
         {
 
         }
-        protected AModule(Configuration.ConfigurationBuilder configurationBuilder) : this(configurationBuilder.Build().ThrowIfFailed().Value)
-        {
-
-        }
-        protected AModule(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, List<IModule> nestedModules = null) : this(configurationBuilder.Build().ThrowIfFailed().Value, nestedModules)
-        {
-            
-        }
-        protected AModule(Action<ConfigurationBuilder<TConfiguration>> builderHandler, List<IModule> nestedModules = null) : 
-            this(BuildConfiguration(builderHandler), nestedModules) 
-        {
-            
-        }
 
         public override void Load(IServiceCollection services)
         {
 
-        }
-
-        private static TConfiguration BuildConfiguration(Action<ConfigurationBuilder<TConfiguration>> handler)
-        {
-            return ConfigurationBuilder<TConfiguration>.CreateNew()
-                                                .Bind(configBuilder => Result.Try(() => handler(configBuilder)).Bind(() => configBuilder.Build()))
-                                                .ThrowIfFailed()
-                                                .Value;
         }
 
         private static List<IModule> LoadNestedModules(IConfiguration configuration)

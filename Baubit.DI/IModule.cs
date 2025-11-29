@@ -1,8 +1,5 @@
-﻿using Baubit.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
-using System.Data;
 
 namespace Baubit.DI
 {
