@@ -3,5 +3,6 @@
     <File Path=".circleci/config.yml" />
     <File Path=".github/copilot-instructions.md" />
   </Folder>
+  <Project Path="Baubit.DI.Test/Baubit.DI.Test.csproj" />
   <Project Path="Baubit.DI/Baubit.DI.csproj" />
 </Solution>
