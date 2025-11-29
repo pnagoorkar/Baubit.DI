@@ -212,6 +212,70 @@ namespace Baubit.DI.Test.ModuleBuilder
             Assert.True(result.IsFailed);
         }
 
+        [Fact]
+        public void CreateMany_WithModuleSources_LoadsFromSources()
+        {
+            // Arrange - Create a JSON file for indirect module loading
+            var tempFile = Path.GetTempFileName();
+            var moduleType = typeof(TestModule).AssemblyQualifiedName;
+            File.WriteAllText(tempFile, $"{{ \"type\": \"{moduleType}\", \"TestValue\": \"fromSource\" }}");
+
+            try
+            {
+                var configDict = new Dictionary<string, string?>
+                {
+                    { "moduleSources:0:jsonUriStrings:0", $"file://{tempFile}" }
+                };
+                var configuration = new MsConfigurationBuilder()
+                    .AddInMemoryCollection(configDict)
+                    .Build();
+
+                // Act
+                var result = DI.ModuleBuilder.CreateMany(configuration);
+
+                // Assert
+                Assert.True(result.IsSuccess);
+                Assert.Single(result.Value);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Fact]
+        public void CreateMany_WithBothModulesAndModuleSources_LoadsAll()
+        {
+            // Arrange - Create a JSON file for indirect module loading
+            var tempFile = Path.GetTempFileName();
+            var moduleType = typeof(TestModule).AssemblyQualifiedName;
+            File.WriteAllText(tempFile, $"{{ \"type\": \"{moduleType}\", \"TestValue\": \"fromSource\" }}");
+
+            try
+            {
+                var configDict = new Dictionary<string, string?>
+                {
+                    { "modules:0:type", moduleType },
+                    { "modules:0:TestValue", "direct" },
+                    { "moduleSources:0:jsonUriStrings:0", $"file://{tempFile}" }
+                };
+                var configuration = new MsConfigurationBuilder()
+                    .AddInMemoryCollection(configDict)
+                    .Build();
+
+                // Act
+                var result = DI.ModuleBuilder.CreateMany(configuration);
+
+                // Assert
+                Assert.True(result.IsSuccess);
+                Assert.Equal(2, result.Value.Count());
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
         #endregion
 
         #region ModuleBuilder.Build Tests
@@ -343,6 +407,28 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             // Act & Assert (should not throw)
             moduleBuilder.Dispose();
+            moduleBuilder.Dispose();
+        }
+
+        [Fact]
+        public void Dispose_AfterBuild_HandlesNullConfigurationBuilder()
+        {
+            // Arrange
+            var configDict = new Dictionary<string, string?>
+            {
+                { "type", typeof(TestModule).AssemblyQualifiedName }
+            };
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(configDict)
+                .Build();
+
+            var moduleBuilder = DI.ModuleBuilder.CreateNew(configuration).Value;
+            
+            // Build disposes the builder and sets configurationBuilder to null
+            moduleBuilder.Build();
+
+            // Act & Assert - Dispose should handle the null configurationBuilder gracefully
+            // Note: The first Dispose in Build already disposed, so this tests the double-dispose path
             moduleBuilder.Dispose();
         }
 
@@ -509,6 +595,35 @@ namespace Baubit.DI.Test.ModuleBuilder
             var result = moduleBuilder.WithNestedModulesFrom(invalidConfiguration);
 
             // Assert
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public void GenericModuleBuilder_WithNestedModulesFrom_MultipleConfigurationsWithInvalid_ReturnsFailedResult()
+        {
+            // Arrange
+            var configBuilder = Baubit.Configuration.ConfigurationBuilder<TestConfiguration>
+                .CreateNew()
+                .Value;
+
+            var validConfigDict = new Dictionary<string, string?>
+            {
+                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:0:TestValue", "valid" }
+            };
+            var invalidConfigDict = new Dictionary<string, string?>
+            {
+                { "modules:0:type", "Invalid.Type, Invalid.Assembly" }
+            };
+            var validConfig = new MsConfigurationBuilder().AddInMemoryCollection(validConfigDict).Build();
+            var invalidConfig = new MsConfigurationBuilder().AddInMemoryCollection(invalidConfigDict).Build();
+
+            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
+
+            // Act - Pass valid first, then invalid to exercise the loop
+            var result = moduleBuilder.WithNestedModulesFrom(validConfig, invalidConfig);
+
+            // Assert - Should fail because one of the configurations is invalid
             Assert.True(result.IsFailed);
         }
 

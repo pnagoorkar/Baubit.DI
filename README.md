@@ -61,22 +61,70 @@ public class MyModule : AModule<MyModuleConfiguration>
 
 ### 3. Load from Configuration
 
+Module configurations can be defined in three ways:
+
+#### Direct Configuration
+
+Configuration values are enclosed in a `configuration` section:
+
 ```json
 {
   "type": "MyNamespace.MyModule, MyAssembly",
-  "ConnectionString": "Server=localhost;Database=mydb",
-  "Timeout": 60,
-  "modules": [
-    {
-      "type": "MyNamespace.NestedModule, MyAssembly"
-    }
-  ]
+  "configuration": {
+    "connectionString": "Server=localhost;Database=mydb",
+    "timeout": 60,
+    "modules": [
+      {
+        "type": "MyNamespace.NestedModule, MyAssembly",
+        "configuration": {}
+      }
+    ]
+  }
 }
 ```
 
+#### Indirect Configuration
+
+Configuration is loaded from external sources via `configurationSource`:
+
+```json
+{
+  "type": "MyNamespace.MyModule, MyAssembly",
+  "configurationSource": {
+    "jsonUriStrings": ["file://path/to/config.json"]
+  }
+}
+```
+
+Where `config.json` contains:
+```json
+{
+  "connectionString": "Server=localhost;Database=mydb",
+  "timeout": 60
+}
+```
+
+#### Hybrid Configuration
+
+Combine direct values with external sources:
+
+```json
+{
+  "type": "MyNamespace.MyModule, MyAssembly",
+  "configuration": {
+    "connectionString": "Server=localhost;Database=mydb"
+  },
+  "configurationSource": {
+    "jsonUriStrings": ["file://path/to/additional.json"]
+  }
+}
+```
+
+#### Loading Modules
+
 ```csharp
 var configuration = new ConfigurationBuilder()
-    .AddJsonFile("module.json")
+    .AddJsonFile("appsettings.json")
     .Build();
 
 var moduleBuilder = ModuleBuilder.CreateNew(configuration).Value;
@@ -84,6 +132,46 @@ var module = moduleBuilder.Build().Value;
 
 var services = new ServiceCollection();
 module.Load(services);
+```
+
+### 4. Load Nested Modules from appsettings.json
+
+```json
+{
+  "rootModule": {
+    "type": "MyNamespace.RootModule, MyAssembly",
+    "configuration": {
+      "modules": [
+        {
+          "type": "MyNamespace.ChildModule1, MyAssembly",
+          "configuration": {
+            "setting1": "value1"
+          }
+        },
+        {
+          "type": "MyNamespace.ChildModule2, MyAssembly",
+          "configuration": {
+            "setting2": "value2"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+```csharp
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
+
+var rootModuleSection = configuration.GetSection("rootModule");
+var moduleBuilder = ModuleBuilder.CreateNew(rootModuleSection).Value;
+var rootModule = moduleBuilder.Build().Value;
+
+// rootModule.NestedModules contains ChildModule1 and ChildModule2
+var services = new ServiceCollection();
+rootModule.Load(services);
 ```
 
 ## API Reference
@@ -140,8 +228,10 @@ Strongly-typed module builder.
 | Key | Description |
 |-----|-------------|
 | `type` | Assembly-qualified module type name |
-| `modules` | Array of inline nested module definitions |
-| `moduleSources` | Array of external configuration sources for modules |
+| `configuration` | Object containing direct configuration values |
+| `configurationSource` | Object specifying external configuration sources (e.g., `jsonUriStrings`) |
+| `modules` | Array of nested module definitions (inside `configuration`) |
+| `moduleSources` | Array of external configuration sources for nested modules |
 
 ## Thread Safety
 

@@ -42,6 +42,20 @@ namespace Baubit.DI.Test.AModule
             }
         }
 
+        /// <summary>
+        /// Test module that uses the default null parameter for nestedModules.
+        /// </summary>
+        public class TestModuleWithNullDefault : AModule<TestConfiguration>
+        {
+            public TestModuleWithNullDefault(TestConfiguration configuration) : base(configuration)
+            {
+            }
+
+            public override void Load(IServiceCollection services)
+            {
+            }
+        }
+
         public class TestModuleWithDependencies : AModule<TestConfiguration>
         {
             private readonly TestModule _dependency;
@@ -111,6 +125,20 @@ namespace Baubit.DI.Test.AModule
 
             // Assert
             Assert.True(module.OnInitializedCalled);
+        }
+
+        [Fact]
+        public void Constructor_WithNullNestedModules_CreatesEmptyList()
+        {
+            // Arrange
+            var config = new TestConfiguration();
+
+            // Act - Using constructor that has nestedModules defaulting to null
+            var module = new TestModuleWithNullDefault(config);
+
+            // Assert
+            Assert.NotNull(module.NestedModules);
+            Assert.Empty(module.NestedModules);
         }
 
         [Fact]
