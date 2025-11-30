@@ -51,10 +51,7 @@ public class MyModule : AModule<MyModuleConfiguration>
         services.AddSingleton<IMyService>(new MyService(Configuration.ConnectionString));
         
         // Load nested modules
-        foreach (var module in NestedModules)
-        {
-            module.Load(services);
-        }
+        base.Load(services); // always pass the call back to base for proper loading of nested modules
     }
 }
 ```
@@ -100,7 +97,13 @@ Where `config.json` contains:
 ```json
 {
   "connectionString": "Server=localhost;Database=mydb",
-  "timeout": 60
+  "timeout": 60,
+  "modules": [
+      {
+      "type": "MyNamespace.NestedModule, MyAssembly",
+      "configuration": {}
+      }
+  ]
 }
 ```
 
@@ -117,6 +120,19 @@ Combine direct values with external sources:
   "configurationSource": {
     "jsonUriStrings": ["file://path/to/additional.json"]
   }
+}
+```
+
+`additional.json`:
+```json
+{
+  "timeout": 60,
+  "modules": [
+      {
+      "type": "MyNamespace.NestedModule, MyAssembly",
+      "configuration": {}
+      }
+  ]
 }
 ```
 

@@ -57,10 +57,17 @@ namespace Baubit.DI
         protected virtual IEnumerable<AModule> GetKnownDependencies() => Enumerable.Empty<AModule>();
 
         /// <summary>
-        /// Registers services with the specified service collection.
+        /// Registers services with the specified service collection.<br/>
+        /// All extending classes MUST call <code>base.Load(services);</code>  for loading nested modules
         /// </summary>
         /// <param name="services">The service collection to register services with.</param>
-        public abstract void Load(IServiceCollection services);
+        public virtual void Load(IServiceCollection services)
+        {
+            foreach (var nestedModule in NestedModules)
+            {
+                nestedModule.Load(services);
+            }
+        }
     }
 
     /// <summary>
@@ -93,19 +100,6 @@ namespace Baubit.DI
         /// </summary>
         /// <param name="configuration">The configuration section to bind settings from.</param>
         protected AModule(IConfiguration configuration) : this(configuration.Get<TConfiguration>(), LoadNestedModules(configuration))
-        {
-
-        }
-
-        /// <summary>
-        /// Registers services with the specified service collection.
-        /// </summary>
-        /// <param name="services">The service collection to register services with.</param>
-        /// <remarks>
-        /// Override this method in derived classes to register services.
-        /// The default implementation does nothing.
-        /// </remarks>
-        public override void Load(IServiceCollection services)
         {
 
         }
