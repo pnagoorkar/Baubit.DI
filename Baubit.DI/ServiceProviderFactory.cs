@@ -8,14 +8,22 @@ using System.Linq;
 
 namespace Baubit.DI
 {
+    /// <summary>
+    /// Default implementation of <see cref="IServiceProviderFactory"/> that loads modules from configuration.
+    /// </summary>
+    /// <remarks>
+    /// This factory extends <see cref="DefaultServiceProviderFactory"/> and loads modules
+    /// defined in the configuration's "modules" and "moduleSources" sections.
+    /// </remarks>
     public class ServiceProviderFactory : DefaultServiceProviderFactory, IServiceProviderFactory
     {
-        private List<IModule> modules = new List<IModule>();
+        private readonly List<IModule> modules = new List<IModule>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class
         /// with default options.
         /// </summary>
-        /// <param name="configuration">Host builder configuration</param>
+        /// <param name="configuration">Host builder configuration containing module definitions.</param>
         public ServiceProviderFactory(IConfiguration configuration) : base()
         {
             LoadModules(configuration);
@@ -25,8 +33,8 @@ namespace Baubit.DI
         /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class
         /// with the specified <paramref name="options"/>.
         /// </summary>
-        /// <param name="options">The options to use for this instance.</param>
-        /// <param name="configuration">Host builder configuration</param>
+        /// <param name="options">The service provider options to use for this instance.</param>
+        /// <param name="configuration">Host builder configuration containing module definitions.</param>
         public ServiceProviderFactory(ServiceProviderOptions options, IConfiguration configuration) : base(options)
         {
             LoadModules(configuration);
@@ -38,6 +46,10 @@ namespace Baubit.DI
                          .Bind(moduleBuilders => Result.Try(() => modules.AddRange(moduleBuilders.Select(moduleBuilder => moduleBuilder.Build().ThrowIfFailed().Value))));
         }
 
+        /// <summary>
+        /// Loads all configured modules into the specified service collection.
+        /// </summary>
+        /// <param name="services">The service collection to load modules into.</param>
         public void Load(IServiceCollection services)
         {
             foreach (var module in modules)
@@ -46,6 +58,12 @@ namespace Baubit.DI
             }
         }
 
+        /// <summary>
+        /// Configures the host application builder to use this service provider factory.
+        /// </summary>
+        /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
+        /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
+        /// <returns>A result containing the configured host application builder.</returns>
         public Result<THostApplicationBuilder> UseConfiguredServiceProviderFactory<THostApplicationBuilder>(THostApplicationBuilder hostApplicationBuilder) where THostApplicationBuilder : IHostApplicationBuilder
         {
             hostApplicationBuilder.ConfigureContainer(this, Load);

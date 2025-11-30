@@ -21,7 +21,7 @@ Baubit.DI provides a modular approach to dependency injection where service regi
 
 - Composed hierarchically through nested modules
 - Loaded dynamically from configuration
-- Validated with strongly-typed configurations
+- Integrated with `IHostApplicationBuilder` via extension methods
 
 ## Quick Start
 
@@ -49,14 +49,34 @@ public class MyModule : AModule<MyModuleConfiguration>
     public override void Load(IServiceCollection services)
     {
         services.AddSingleton<IMyService>(new MyService(Configuration.ConnectionString));
-        
-        // Load nested modules
-        base.Load(services); // always pass the call back to base for proper loading of nested modules
+        base.Load(services); // Load nested modules
     }
 }
 ```
 
-### 3. Load from Configuration
+### 3. Host Builder Integration
+
+The simplest way to use Baubit.DI is with `IHostApplicationBuilder`:
+
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+builder.UseConfiguredServiceProviderFactory();
+var host = builder.Build();
+```
+
+With external configuration:
+
+```csharp
+var configuration = new ConfigurationBuilder()
+    .AddJsonFile("modules.json")
+    .Build();
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.UseConfiguredServiceProviderFactory(configuration);
+var host = builder.Build();
+```
+
+### 4. Module Configuration
 
 Module configurations can be defined in three ways:
 
@@ -66,17 +86,15 @@ Configuration values are enclosed in a `configuration` section:
 
 ```json
 {
-  "type": "MyNamespace.MyModule, MyAssembly",
-  "configuration": {
-    "connectionString": "Server=localhost;Database=mydb",
-    "timeout": 60,
-    "modules": [
-      {
-        "type": "MyNamespace.NestedModule, MyAssembly",
-        "configuration": {}
+  "modules": [
+    {
+      "type": "MyNamespace.MyModule, MyAssembly",
+      "configuration": {
+        "connectionString": "Server=localhost;Database=mydb",
+        "timeout": 60
       }
-    ]
-  }
+    }
+  ]
 }
 ```
 
@@ -90,20 +108,6 @@ Configuration is loaded from external sources via `configurationSource`:
   "configurationSource": {
     "jsonUriStrings": ["file://path/to/config.json"]
   }
-}
-```
-
-Where `config.json` contains:
-```json
-{
-  "connectionString": "Server=localhost;Database=mydb",
-  "timeout": 60,
-  "modules": [
-      {
-      "type": "MyNamespace.NestedModule, MyAssembly",
-      "configuration": {}
-      }
-  ]
 }
 ```
 
@@ -123,20 +127,7 @@ Combine direct values with external sources:
 }
 ```
 
-`additional.json`:
-```json
-{
-  "timeout": 60,
-  "modules": [
-      {
-      "type": "MyNamespace.NestedModule, MyAssembly",
-      "configuration": {}
-      }
-  ]
-}
-```
-
-#### Loading Modules
+### 5. Manual Module Loading
 
 ```csharp
 var configuration = new ConfigurationBuilder()
@@ -150,47 +141,26 @@ var services = new ServiceCollection();
 module.Load(services);
 ```
 
-### 4. Load Nested Modules from appsettings.json
-
-```json
-{
-  "rootModule": {
-    "type": "MyNamespace.RootModule, MyAssembly",
-    "configuration": {
-      "modules": [
-        {
-          "type": "MyNamespace.ChildModule1, MyAssembly",
-          "configuration": {
-            "setting1": "value1"
-          }
-        },
-        {
-          "type": "MyNamespace.ChildModule2, MyAssembly",
-          "configuration": {
-            "setting2": "value2"
-          }
-        }
-      ]
-    }
-  }
-}
-```
-
-```csharp
-var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json")
-    .Build();
-
-var rootModuleSection = configuration.GetSection("rootModule");
-var moduleBuilder = ModuleBuilder.CreateNew(rootModuleSection).Value;
-var rootModule = moduleBuilder.Build().Value;
-
-// rootModule.NestedModules contains ChildModule1 and ChildModule2
-var services = new ServiceCollection();
-rootModule.Load(services);
-```
-
 ## API Reference
+
+### HostBuilderExtensions
+
+Extension methods for `IHostApplicationBuilder`.
+
+| Method | Description |
+|--------|-------------|
+| `UseConfiguredServiceProviderFactory(IConfiguration, Action<T,IResultBase>)` | Configure host with module-based DI |
+
+### ServiceProviderFactory
+
+Default service provider factory that loads modules from configuration.
+
+| Method | Description |
+|--------|-------------|
+| `ServiceProviderFactory(IConfiguration)` | Create with configuration |
+| `ServiceProviderFactory(ServiceProviderOptions, IConfiguration)` | Create with options |
+| `Load(IServiceCollection)` | Load all modules into services |
+| `UseConfiguredServiceProviderFactory(IHostApplicationBuilder)` | Configure host builder |
 
 ### IModule
 
@@ -226,7 +196,6 @@ Builds modules from configuration.
 | `CreateNew(IConfiguration)` | Create builder from config section |
 | `CreateMany(IConfiguration)` | Create builders for nested modules |
 | `Build()` | Build the module instance |
-| `GetModuleSourcesSectionOrDefault(IConfiguration)` | Get external module sources |
 
 ### ModuleBuilder&lt;TModule, TConfiguration&gt;
 
@@ -245,9 +214,10 @@ Strongly-typed module builder.
 |-----|-------------|
 | `type` | Assembly-qualified module type name |
 | `configuration` | Object containing direct configuration values |
-| `configurationSource` | Object specifying external configuration sources (e.g., `jsonUriStrings`) |
-| `modules` | Array of nested module definitions (inside `configuration`) |
+| `configurationSource` | Object specifying external configuration sources |
+| `modules` | Array of nested module definitions |
 | `moduleSources` | Array of external configuration sources for nested modules |
+| `serviceProviderFactoryType` | Custom service provider factory type (optional) |
 
 ## Thread Safety
 
