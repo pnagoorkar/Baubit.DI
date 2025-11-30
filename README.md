@@ -54,33 +54,45 @@ public class MyModule : AModule<MyModuleConfiguration>
 }
 ```
 
-### 3. Host Builder Integration
+### 3. Loading modules
 
 The simplest way to use Baubit.DI is with `IHostApplicationBuilder`:
 
+#### Using `HostApplicationBuilder`
 ```csharp
-var builder = Host.CreateApplicationBuilder(args);
-builder.UseConfiguredServiceProviderFactory();
-var host = builder.Build();
+await Host.CreateApplicationBuilder()
+          .UseConfiguredServiceProviderFactory() // wires all modules defined in app.config
+          .Build()
+          .RunAsync();
 ```
 
-With external configuration:
-
+#### Using `WebApplicationBuilder`
 ```csharp
-var configuration = new ConfigurationBuilder()
-    .AddJsonFile("modules.json")
-    .Build();
+var webApp = WebApplication.CreateBuilder()
+                           .UseConfiguredServiceProviderFactory() // wires all modules defined in app.config
+                           .Build();
 
-var builder = Host.CreateApplicationBuilder(args);
-builder.UseConfiguredServiceProviderFactory(configuration);
-var host = builder.Build();
+// Use HTTPS, HSTS, CORS, Auth and other middleware
+// Map endpoints
+
+await webApp.RunAsync();
 ```
 
-### 4. Module Configuration
+#### Using ModuleBuilder
+```csharp
+var module = ModuleBuilder<MyModule>.CreateNew(CreateConfigurationBuilder())
+                                    .Bind(mb => mb.Build())
+                                    .Value;
+var services = new ServiceCollection();
+module.Load(services); // Registers services defined in MyModule and its nested modules
+var serviceProvider = services.BuildServiceProvider();
+```
 
-Module configurations can be defined in three ways:
+### 4. Defining modules in `appsettings.json`
 
-#### Direct Configuration
+Module can be defined in configuration files in 3 ways:
+
+#### Direct definition
 
 Configuration values are enclosed in a `configuration` section:
 
@@ -104,12 +116,33 @@ Configuration is loaded from external sources via `configurationSource`:
 
 ```json
 {
-  "type": "MyNamespace.MyModule, MyAssembly",
-  "configurationSource": {
-    "jsonUriStrings": ["file://path/to/config.json"]
-  }
+  "modules": [    
+    {
+      "type": "MyNamespace.MyModule, MyAssembly",
+      "configurationSource": {
+        "jsonUriStrings": ["file://path/to/config.json"]
+      }
+    }
+  ]
 }
 ```
+
+config.json
+```json
+{
+    "connectionString": "Server=localhost;Database=mydb",
+    "timeout": 60,
+    "modules": [    
+        {
+            "type": "MyNamespace.MyAnotherModule, MyAssembly",
+            "configuration": {
+            "somePropKey": "some_prop_value"
+            }
+        }
+    ]
+}
+```
+> This will load both MyModule and MyAnotherModule (as a nested module) along with their corresponding module configurations.
 
 #### Hybrid Configuration
 
@@ -117,29 +150,21 @@ Combine direct values with external sources:
 
 ```json
 {
-  "type": "MyNamespace.MyModule, MyAssembly",
-  "configuration": {
-    "connectionString": "Server=localhost;Database=mydb"
-  },
-  "configurationSource": {
-    "jsonUriStrings": ["file://path/to/additional.json"]
-  }
+  "modules": [
+    {
+      "type": "MyNamespace.MyModule, MyAssembly",
+      "configuration": {
+        "connectionString": "Server=localhost;Database=mydb"
+      },
+      "configurationSource": {
+        "jsonUriStrings": ["file://path/to/additional.json"]
+      }
+    }
+  ]
 }
 ```
+> `UseConfiguredServiceProviderFactory(...)` expects modules to be defined in `appsettings.json` unless overridden by explicitly passing a `configuration` to the method call.
 
-### 5. Manual Module Loading
-
-```csharp
-var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json")
-    .Build();
-
-var moduleBuilder = ModuleBuilder.CreateNew(configuration).Value;
-var module = moduleBuilder.Build().Value;
-
-var services = new ServiceCollection();
-module.Load(services);
-```
 
 ## API Reference
 
@@ -218,10 +243,6 @@ Strongly-typed module builder.
 | `modules` | Array of nested module definitions |
 | `moduleSources` | Array of external configuration sources for nested modules |
 | `serviceProviderFactoryType` | Custom service provider factory type (optional) |
-
-## Thread Safety
-
-All public APIs are thread-safe. Module instances are immutable after construction.
 
 ## License
 
