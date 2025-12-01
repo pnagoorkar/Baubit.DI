@@ -24,6 +24,7 @@ namespace Baubit.DI
         /// with default options.
         /// </summary>
         /// <param name="configuration">Host builder configuration containing module definitions.</param>
+        /// <param name="components">Optional array of pre-built components to include.</param>
         public ServiceProviderFactory(IConfiguration configuration, IComponent[] components) : base()
         {
             Initialize(configuration, components);
@@ -35,6 +36,7 @@ namespace Baubit.DI
         /// </summary>
         /// <param name="options">The service provider options to use for this instance.</param>
         /// <param name="configuration">Host builder configuration containing module definitions.</param>
+        /// <param name="components">Optional array of pre-built components to include.</param>
         public ServiceProviderFactory(ServiceProviderOptions options, IConfiguration configuration, IComponent[] components) : base(options)
         {
             Initialize(configuration, components);
@@ -42,7 +44,10 @@ namespace Baubit.DI
 
         private void Initialize(IConfiguration configuration, IComponent[] components)
         {
-            modules.AddRange(components.SelectMany(component => component));
+            if (components != null)
+            {
+                modules.AddRange(components.SelectMany(component => component));
+            }
             LoadModules(configuration);
         }
 

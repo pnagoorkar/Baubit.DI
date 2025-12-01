@@ -23,6 +23,7 @@ namespace Baubit.DI
         /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
         /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
         /// <param name="configuration">Optional additional configuration to add to the builder's configuration.</param>
+        /// <param name="componentsFactory">Optional factory function that returns pre-built components to include.</param>
         /// <param name="onFailure">Optional callback invoked when factory creation or registration fails. Defaults to exiting the application.</param>
         /// <returns>The configured host application builder.</returns>
         /// <remarks>

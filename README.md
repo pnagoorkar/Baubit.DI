@@ -233,6 +233,38 @@ Strongly-typed module builder.
 | `WithNestedModulesFrom(IConfiguration)` | Load nested modules from config |
 | `Build()` | Build typed module |
 
+### IComponent
+
+Interface for grouping related modules together.
+
+| Member | Description |
+|--------|-------------|
+| `IEnumerable<IModule>` | Enumeration of modules in the component |
+| `Dispose()` | Release component resources |
+
+### AComponent
+
+Abstract base class for components that lazily build modules.
+
+| Method | Description |
+|--------|-------------|
+| `Build(ComponentBuilder)` | Override to configure which modules the component contains |
+| `GetEnumerator()` | Returns enumerator for modules (builds on first call) |
+| `Dispose()` | Release resources |
+
+### ComponentBuilder
+
+Builder for creating components with collections of modules.
+
+| Method | Description |
+|--------|-------------|
+| `CreateNew()` | Create a new builder instance |
+| `WithModule<TModule, TConfiguration>(ConfigurationBuilder<T>)` | Add a module using configuration builder |
+| `WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<T>>)` | Add a module with configuration handler |
+| `WithModule<TModule, TConfiguration>(Action<T>)` | Add a module with configuration override |
+| `WithModulesFrom(params IComponent[])` | Add modules from existing components |
+| `Build()` | Build the component |
+
 ## Configuration Keys
 
 | Key | Description |
