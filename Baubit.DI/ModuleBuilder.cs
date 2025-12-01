@@ -212,8 +212,8 @@ namespace Baubit.DI
         private static Result<IConfigurationSection> GetModuleSourcesSection(IConfiguration configuration)
         {
             var section = configuration.GetSection(ModuleSourcesSectionKey);
-            return section.Exists() 
-                ? Result.Ok(section) 
+            return section.Exists()
+                ? Result.Ok(section)
                 : Result.Fail(Enumerable.Empty<IError>()).WithReason(new ModuleSourcesNotDefined());
         }
 
@@ -260,6 +260,7 @@ namespace Baubit.DI
         where TConfiguration : AConfiguration
     {
         private readonly List<IModule> nestedModules = new List<IModule>();
+        private readonly List<Action<TConfiguration>> overrideHandlers = new List<Action<TConfiguration>>();
 
         private ModuleBuilder(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder) : base(configurationBuilder)
         {
@@ -272,6 +273,11 @@ namespace Baubit.DI
         public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder)
         {
             return Result.Try(() => new ModuleBuilder<TModule, TConfiguration>(configurationBuilder));
+        }
+
+        public Result<ModuleBuilder<TModule, TConfiguration>> WithOverrideHandlers(params Action<TConfiguration>[] overrideHandlers)
+        {
+            return Result.Try(() => this.overrideHandlers.AddRange(overrideHandlers)).Bind(() => Result.Ok(this));
         }
 
         /// <summary>
@@ -320,9 +326,21 @@ namespace Baubit.DI
         public new Result<TModule> Build()
         {
             return ((ConfigurationBuilder<TConfiguration>)configurationBuilder).Build()
-                .Bind(config => BuildModule<TModule>(
-                    new[] { typeof(TConfiguration), typeof(List<IModule>) }, 
-                    new object[] { config, nestedModules }));
+                                                                               .Bind(CallOverrideHandlers)
+                                                                               .Bind(config => BuildModule<TModule>(
+                                                                                   new[] { typeof(TConfiguration), typeof(List<IModule>) }, 
+                                                                                   new object[] { config, nestedModules }));
+        }
+
+        private Result<TConfiguration> CallOverrideHandlers(TConfiguration configuration)
+        {
+            return Result.Try(() => 
+            {
+                foreach(var overrideHandler in overrideHandlers)
+                {
+                    overrideHandler?.Invoke(configuration);
+                }
+            }).Bind(() => Result.Ok(configuration));
         }
     }
 }

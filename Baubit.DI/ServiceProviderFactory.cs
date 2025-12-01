@@ -24,9 +24,9 @@ namespace Baubit.DI
         /// with default options.
         /// </summary>
         /// <param name="configuration">Host builder configuration containing module definitions.</param>
-        public ServiceProviderFactory(IConfiguration configuration) : base()
+        public ServiceProviderFactory(IConfiguration configuration, IComponent[] components) : base()
         {
-            LoadModules(configuration);
+            Initialize(configuration, components);
         }
 
         /// <summary>
@@ -35,8 +35,14 @@ namespace Baubit.DI
         /// </summary>
         /// <param name="options">The service provider options to use for this instance.</param>
         /// <param name="configuration">Host builder configuration containing module definitions.</param>
-        public ServiceProviderFactory(ServiceProviderOptions options, IConfiguration configuration) : base(options)
+        public ServiceProviderFactory(ServiceProviderOptions options, IConfiguration configuration, IComponent[] components) : base(options)
         {
+            Initialize(configuration, components);
+        }
+
+        private void Initialize(IConfiguration configuration, IComponent[] components)
+        {
+            modules.AddRange(components.SelectMany(component => component));
             LoadModules(configuration);
         }
 

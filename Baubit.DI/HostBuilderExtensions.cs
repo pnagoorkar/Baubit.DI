@@ -31,6 +31,7 @@ namespace Baubit.DI
         /// </remarks>
         public static THostApplicationBuilder UseConfiguredServiceProviderFactory<THostApplicationBuilder>(this THostApplicationBuilder hostApplicationBuilder,
                                                                                                            IConfiguration configuration = null,
+                                                                                                           Func<IComponent[]> componentsFactory = null,
                                                                                                            Action<THostApplicationBuilder, IResultBase> onFailure = null) where THostApplicationBuilder : IHostApplicationBuilder
         {
             if (onFailure == null) onFailure = Exit;
@@ -40,8 +41,8 @@ namespace Baubit.DI
             var factoryType = factoryTypeResolutionResult.ValueOrDefault ?? typeof(ServiceProviderFactory);
 
             var registrationResult = InvokeFactoryConstructor(factoryType, 
-                                                              new Type[] { typeof(IConfiguration) }, 
-                                                              new object[] { hostApplicationBuilder.Configuration }).Bind(serviceProviderFactory => serviceProviderFactory.UseConfiguredServiceProviderFactory(hostApplicationBuilder));
+                                                              new Type[] { typeof(IConfiguration), typeof(IComponent[]) }, 
+                                                              new object[] { hostApplicationBuilder.Configuration, componentsFactory?.Invoke() }).Bind(serviceProviderFactory => serviceProviderFactory.UseConfiguredServiceProviderFactory(hostApplicationBuilder));
 
             if (registrationResult.IsFailed)
             {

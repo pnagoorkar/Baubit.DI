@@ -12,7 +12,7 @@ namespace Baubit.DI.Test.HostBuilderExtensions.Setup
     {
         public static bool WasCreated { get; private set; }
 
-        public CustomServiceProviderFactory(IConfiguration configuration) : base(configuration)
+        public CustomServiceProviderFactory(IConfiguration configuration) : base(configuration, [])
         {
             WasCreated = true;
         }

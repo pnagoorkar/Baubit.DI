@@ -44,7 +44,7 @@ namespace Baubit.DI.Test.ServiceProviderFactory
             var options = new ServiceProviderOptions { ValidateScopes = true };
 
             // Act
-            var factory = new Baubit.DI.ServiceProviderFactory(options, configuration);
+            var factory = new Baubit.DI.ServiceProviderFactory(options, configuration, []);
             var services = new ServiceCollection();
             factory.Load(services);
 
@@ -60,7 +60,7 @@ namespace Baubit.DI.Test.ServiceProviderFactory
                 .AddInMemoryCollection(new Dictionary<string, string?>())
                 .Build();
 
-            var factory = new Baubit.DI.ServiceProviderFactory(configuration);
+            var factory = new Baubit.DI.ServiceProviderFactory(configuration, []);
             var services = new ServiceCollection();
 
             // Act
@@ -82,7 +82,7 @@ namespace Baubit.DI.Test.ServiceProviderFactory
                 .AddInMemoryCollection(configDict)
                 .Build();
 
-            var factory = new Baubit.DI.ServiceProviderFactory(configuration);
+            var factory = new Baubit.DI.ServiceProviderFactory(configuration, []);
             var builder = Host.CreateApplicationBuilder();
 
             // Act

@@ -69,7 +69,7 @@ namespace Baubit.DI.Test.HostBuilderExtensions
             Assert.True(configResult.IsSuccess);
             
             var builder = Host.CreateApplicationBuilder();
-            builder.UseConfiguredServiceProviderFactory(configResult.Value, OnFailure);
+            builder.UseConfiguredServiceProviderFactory(configResult.Value, null, OnFailure);
 
             // Assert
             Assert.True(onFailureCalled);
