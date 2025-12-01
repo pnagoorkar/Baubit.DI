@@ -41,9 +41,8 @@ namespace Baubit.DI
             var factoryTypeResolutionResult = TypeResolver.TryResolveType(hostApplicationBuilder.Configuration[ServiceProviderFactoryTypeKey]);
             var factoryType = factoryTypeResolutionResult.ValueOrDefault ?? typeof(ServiceProviderFactory);
 
-            var registrationResult = InvokeFactoryConstructor(factoryType, 
-                                                              new Type[] { typeof(IConfiguration), typeof(IComponent[]) }, 
-                                                              new object[] { hostApplicationBuilder.Configuration, componentsFactory?.Invoke() }).Bind(serviceProviderFactory => serviceProviderFactory.UseConfiguredServiceProviderFactory(hostApplicationBuilder));
+            var registrationResult = factoryType.CreateInstance<IServiceProviderFactory>(new Type[] { typeof(IConfiguration), typeof(IComponent[]) },
+                                                                new object[] { hostApplicationBuilder.Configuration, componentsFactory?.Invoke() }).Bind(serviceProviderFactory => serviceProviderFactory.UseConfiguredServiceProviderFactory(hostApplicationBuilder));
 
             if (registrationResult.IsFailed)
             {
@@ -64,22 +63,6 @@ namespace Baubit.DI
         {
             Console.WriteLine(result.ToString());
             Environment.Exit(-1);
-        }
-
-        /// <summary>
-        /// Invokes the constructor of a service provider factory type.
-        /// </summary>
-        /// <param name="type">The factory type to instantiate.</param>
-        /// <param name="paramTypes">The constructor parameter types.</param>
-        /// <param name="paramValues">The constructor parameter values.</param>
-        /// <returns>A result containing the created factory instance, or failure information.</returns>
-        private static Result<IServiceProviderFactory> InvokeFactoryConstructor(Type type, Type[] paramTypes, object[] paramValues)
-        {
-            return Result.Try(() =>
-            {
-                var ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, paramTypes, null);
-                return (IServiceProviderFactory)ctor.Invoke(paramValues);
-            });
         }
     }
 }

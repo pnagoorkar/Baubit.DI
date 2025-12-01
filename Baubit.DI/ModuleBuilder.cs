@@ -7,7 +7,6 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace Baubit.DI
 {
@@ -162,22 +161,12 @@ namespace Baubit.DI
         {
             try
             {
-                return FailIfDisposed()
-                    .Bind(() => InvokeModuleConstructor<TModule>(paramTypes, paramValues));
+                return FailIfDisposed().Bind(() => moduleType.CreateInstance<TModule>(paramTypes, paramValues));
             }
             finally
             {
                 Dispose();
             }
-        }
-
-        private Result<TModule> InvokeModuleConstructor<TModule>(Type[] paramTypes, object[] paramValues) where TModule : IModule
-        {
-            return Result.Try(() =>
-            {
-                var ctor = moduleType.GetConstructor(BindingFlags.Instance | BindingFlags.Public, null, paramTypes, null);
-                return (TModule)ctor.Invoke(paramValues);
-            });
         }
 
         private Result FailIfDisposed()
