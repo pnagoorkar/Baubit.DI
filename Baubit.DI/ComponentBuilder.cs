@@ -1,6 +1,5 @@
 ﻿using Baubit.Configuration;
 using FluentResults;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,7 +20,7 @@ namespace Baubit.DI
         private List<IModule> modules = new List<IModule>();
         private bool disposedValue;
 
-        private ComponentBuilder()
+        protected ComponentBuilder()
         {
 
         }
@@ -172,7 +171,7 @@ namespace Baubit.DI
     /// <summary>
     /// Extension methods for <see cref="ComponentBuilder"/> wrapped in <see cref="Result{T}"/>.
     /// </summary>
-    public static class FeatureBuilderExtensions
+    public static class ComponentBuilderExtensions
     {
         /// <summary>
         /// Adds a module to the component using the specified configuration builder.
