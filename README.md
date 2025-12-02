@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Known Vulnerabilities](https://snyk.io/test/github/pnagoorkar/Baubit.DI/badge.svg)](https://snyk.io/test/github/pnagoorkar/Baubit.DI)
 
-Modular dependency injection framework for .NET with configuration-driven module composition.
+Modularity framework for .NET with configuration-driven module composition.
 
 ## Table of Contents
 
