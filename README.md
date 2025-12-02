@@ -169,6 +169,8 @@ await Host.CreateApplicationBuilder()
 - Some modules need compile-time configuration or code-based logic
 - You want to extend configuration-based modules with additional code-based ones
 
+> The full set of sample code can be found [here](./SampleConsoleApp)
+
 ---
 
 ## Module Configuration in appsettings.json
