@@ -15,12 +15,12 @@ namespace Baubit.DI
     /// <see cref="WithModule{TModule, TConfiguration}(ConfigurationBuilder{TConfiguration})"/> methods.
     /// Call <see cref="Build"/> to create the final component.
     /// </remarks>
-    public class ComponentBuilder : IDisposable
+    public sealed class ComponentBuilder : IDisposable
     {
         private List<IModule> modules = new List<IModule>();
         private bool disposedValue;
 
-        protected ComponentBuilder()
+        private ComponentBuilder()
         {
 
         }
