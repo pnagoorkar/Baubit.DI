@@ -16,7 +16,7 @@
     <AssemblyOriginatorKeyFile>$(KeyFilePath)</AssemblyOriginatorKeyFile>
     <EmitCompilerGeneratedFiles>false</EmitCompilerGeneratedFiles>
     <Description>Modularity framework for .NET with configuration-driven module composition. Load modules from JSON, code, or both.</Description>
-    <PackageTags>dependency-injection;di;modules;configuration;ioc;inversion-of-control;service-collection;hosting;netstandard</PackageTags>
+    <PackageTags>dependency-injection;di;modules;configuration;ioc;inversion-of-control;service-collection;hosting;netstandard;baubit</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
