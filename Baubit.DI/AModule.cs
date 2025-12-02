@@ -8,19 +8,39 @@ using System.Text.Json.Serialization;
 
 namespace Baubit.DI
 {
+    /// <summary>
+    /// Abstract base class for dependency injection modules.
+    /// </summary>
+    /// <remarks>
+    /// Modules encapsulate service registrations and can be composed hierarchically.
+    /// Derive from this class or <see cref="AModule{TConfiguration}"/> to create custom modules.
+    /// </remarks>
     public abstract class AModule : IModule
     {
+        /// <summary>
+        /// Gets or sets the configuration associated with this module.
+        /// </summary>
         [JsonIgnore]
         public AConfiguration Configuration { get; protected set; }
+
+        /// <summary>
+        /// Gets the collection of nested modules that this module depends on.
+        /// </summary>
         [JsonIgnore]
         public IReadOnlyList<IModule> NestedModules { get; private set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AModule"/> class.
+        /// </summary>
+        /// <param name="configuration">The configuration for this module.</param>
+        /// <param name="nestedModules">The list of nested modules this module depends on.</param>
         public AModule(AConfiguration configuration, List<IModule> nestedModules)
         {
             Configuration = configuration;
             NestedModules = nestedModules.Concat(GetKnownDependencies()).ToList().AsReadOnly();
             OnInitialized();
         }
+
         /// <summary>
         /// Called by the constructor in <see cref="AModule"/> after all construction activities.
         /// Override this method to perform construction in child types.
@@ -31,31 +51,55 @@ namespace Baubit.DI
         }
 
         /// <summary>
-        /// Use this to add any know dependencies to <see cref="NestedModules"/>
+        /// Override to provide known module dependencies that should be added to <see cref="NestedModules"/>.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>An enumerable of modules that this module depends on.</returns>
         protected virtual IEnumerable<AModule> GetKnownDependencies() => Enumerable.Empty<AModule>();
 
-        public abstract void Load(IServiceCollection services);
+        /// <summary>
+        /// Registers services with the specified service collection.<br/>
+        /// All extending classes MUST call <code>base.Load(services);</code>  for loading nested modules
+        /// </summary>
+        /// <param name="services">The service collection to register services with.</param>
+        public virtual void Load(IServiceCollection services)
+        {
+            foreach (var nestedModule in NestedModules)
+            {
+                nestedModule.Load(services);
+            }
+        }
     }
 
+    /// <summary>
+    /// Abstract base class for dependency injection modules with strongly-typed configuration.
+    /// </summary>
+    /// <typeparam name="TConfiguration">The type of configuration for this module.</typeparam>
     public abstract class AModule<TConfiguration> : AModule where TConfiguration : AConfiguration
     {
+        /// <summary>
+        /// Gets the strongly-typed configuration associated with this module.
+        /// </summary>
         public new TConfiguration Configuration
         {
             get => (TConfiguration)base.Configuration;
             private set => base.Configuration = value;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AModule{TConfiguration}"/> class.
+        /// </summary>
+        /// <param name="configuration">The strongly-typed configuration for this module.</param>
+        /// <param name="nestedModules">Optional list of nested modules this module depends on.</param>
         protected AModule(TConfiguration configuration, List<IModule> nestedModules = null) : base(configuration, nestedModules ?? new List<IModule>())
         {
 
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AModule{TConfiguration}"/> class from an <see cref="IConfiguration"/> section.
+        /// </summary>
+        /// <param name="configuration">The configuration section to bind settings from.</param>
         protected AModule(IConfiguration configuration) : this(configuration.Get<TConfiguration>(), LoadNestedModules(configuration))
-        {
-
-        }
-
-        public override void Load(IServiceCollection services)
         {
 
         }

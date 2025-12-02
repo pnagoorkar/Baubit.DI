@@ -8,6 +8,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="ServiceProviderFactory\Setup\config.json" />
+    <None Remove="HostBuilderExtensions\Setup\config.json" />
+    <None Remove="HostBuilderExtensions\Setup\invalidFactoryType.json" />
+    <None Remove="HostBuilderExtensions\Setup\customFactoryType.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ServiceProviderFactory\Setup\config.json" />
+    <EmbeddedResource Include="HostBuilderExtensions\Setup\config.json" />
+    <EmbeddedResource Include="HostBuilderExtensions\Setup\invalidFactoryType.json" />
+    <EmbeddedResource Include="HostBuilderExtensions\Setup\customFactoryType.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />

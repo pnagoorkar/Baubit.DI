@@ -7,108 +7,161 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace Baubit.DI
 {
+    /// <summary>
+    /// Builder class for creating <see cref="IModule"/> instances from configuration.
+    /// </summary>
+    /// <remarks>
+    /// This builder supports creating modules from configuration sections that define the module type,
+    /// nested modules, and module sources. It implements <see cref="IDisposable"/> to properly clean up resources.
+    /// </remarks>
     public class ModuleBuilder : IDisposable
     {
+        /// <summary>
+        /// Configuration key for specifying the module type.
+        /// </summary>
         public const string ModuleTypeKey = "type";
+
+        /// <summary>
+        /// Configuration key for the section containing nested module definitions.
+        /// </summary>
         public const string ModulesSectionKey = "modules";
+
+        /// <summary>
+        /// Configuration key for the section containing external module source definitions.
+        /// </summary>
         public const string ModuleSourcesSectionKey = "moduleSources";
 
-        private Type moduleType;
+        /// <summary>
+        /// The type of module to be built.
+        /// </summary>
+        protected Type moduleType;
+
+        /// <summary>
+        /// The configuration builder used to construct the module configuration.
+        /// </summary>
         protected Baubit.Configuration.ConfigurationBuilder configurationBuilder;
+        
         private bool disposedValue;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ModuleBuilder"/> class.
+        /// </summary>
+        /// <param name="configurationBuilder">The configuration builder to use.</param>
         protected ModuleBuilder(Configuration.ConfigurationBuilder configurationBuilder)
         {
             this.configurationBuilder = configurationBuilder;
         }
 
+        /// <summary>
+        /// Creates a new <see cref="ModuleBuilder"/> from the specified configuration.
+        /// </summary>
+        /// <param name="configuration">The configuration section containing module definition.</param>
+        /// <returns>A result containing the module builder, or failure information.</returns>
         public static Result<ModuleBuilder> CreateNew(IConfiguration configuration)
         {
-            return Configuration.ConfigurationBuilder
-                                .CreateNew()
-                                .Bind(cb => Result.Try(() => new ModuleBuilder(cb)))
-                                .Bind(moduleBuilder => moduleBuilder.DetermineModuleType(configuration)
-                                                                    .Bind(() => moduleBuilder.WithAdditionaConfigurationSourcesFrom<ModuleBuilder>(configuration))
-                                                                    .Bind(_ => moduleBuilder.WithAdditionaConfigurationsFrom<ModuleBuilder>(configuration))
-                                                                    .Bind(_ => Result.Ok(moduleBuilder)));
+            return Configuration.ConfigurationBuilder.CreateNew()
+                .Bind(cb => Result.Try(() => new ModuleBuilder(cb)))
+                .Bind(builder => builder.Initialize(configuration));
         }
 
+        /// <summary>
+        /// Initializes the builder from configuration.
+        /// </summary>
+        private Result<ModuleBuilder> Initialize(IConfiguration configuration)
+        {
+            return ResolveModuleType(configuration)
+                .Bind(() => WithAdditionalConfigurationSourcesFrom<ModuleBuilder>(configuration))
+                .Bind(_ => WithAdditionalConfigurationsFrom<ModuleBuilder>(configuration))
+                .Bind(_ => Result.Ok(this));
+        }
+
+        /// <summary>
+        /// Creates multiple <see cref="ModuleBuilder"/> instances from nested module definitions in the configuration.
+        /// </summary>
+        /// <param name="configuration">The configuration section containing module definitions.</param>
+        /// <returns>A result containing the collection of module builders, or failure information.</returns>
         public static Result<IEnumerable<ModuleBuilder>> CreateMany(IConfiguration configuration)
         {
-            try
+            return Result.Try(() =>
             {
-                var moduleBuilders = new List<ModuleBuilder>();
-                GetDirectlyDefinedModuleSections(configuration).Bind(moduleSections => Result.Try(() =>
-                {
-                    foreach (var moduleSection in moduleSections)
-                    {
-                        var moduleBuilder = CreateNew(moduleSection).ThrowIfFailed().Value;
-                        moduleBuilders.Add(moduleBuilder);
-                    }
-                })).ThrowIfFailed();
-
-                GetInDirectlyDefinedModuleSections(configuration).Bind(sourcesSections => Result.Try(() => 
-                {
-                    foreach(var sourcesSection in sourcesSections)
-                    {
-                        var moduleBuilder = Configuration.ConfigurationBuilder
-                                                         .CreateNew()
-                                                         .Bind(cb => cb.WithAdditionalConfigurationSources(sourcesSection.Get<ConfigurationSource>()))
-                                                         .Bind(cb => cb.Build())
-                                                         .Bind(cfg => CreateNew(cfg))
-                                                         .ThrowIfFailed()
-                                                         .Value;
-                        moduleBuilders.Add(moduleBuilder);
-                    }
-                })).ThrowIfFailed();
-
-                return Result.Ok<IEnumerable<ModuleBuilder>>(moduleBuilders);
-            }
-            catch(Exception exp)
-            {
-                return Result.Fail(new ExceptionalError(exp));
-            }
+                var builders = new List<ModuleBuilder>();
+                builders.AddRange(CreateBuildersFromDirectModules(configuration));
+                builders.AddRange(CreateBuildersFromModuleSources(configuration));
+                return builders.AsEnumerable();
+            });
         }
 
-        private Result DetermineModuleType(IConfiguration configuration)
+        private static IEnumerable<ModuleBuilder> CreateBuildersFromDirectModules(IConfiguration configuration)
+        {
+            var sections = GetModulesSectionOrDefault(configuration).ValueOrDefault?.GetChildren() ?? Enumerable.Empty<IConfigurationSection>();
+            return sections.Select(section => CreateNew(section).ThrowIfFailed().Value);
+        }
+
+        private static IEnumerable<ModuleBuilder> CreateBuildersFromModuleSources(IConfiguration configuration)
+        {
+            var sections = GetModuleSourcesSectionOrDefault(configuration).ValueOrDefault?.GetChildren() ?? Enumerable.Empty<IConfigurationSection>();
+            return sections.Select(section => CreateBuilderFromSource(section).ThrowIfFailed().Value);
+        }
+
+        private static Result<ModuleBuilder> CreateBuilderFromSource(IConfigurationSection sourceSection)
+        {
+            return Configuration.ConfigurationBuilder.CreateNew()
+                .Bind(cb => cb.WithAdditionalConfigurationSources(sourceSection.Get<ConfigurationSource>()))
+                .Bind(cb => cb.Build())
+                .Bind(CreateNew);
+        }
+
+        private Result ResolveModuleType(IConfiguration configuration)
         {
             return TypeResolver.TryResolveType(configuration[ModuleTypeKey])
-                               .Bind(type => Result.Try(() => moduleType = type))
-                               .Bind(_ => Result.FailIf(moduleType == null, string.Empty));
+                .Bind(type => Result.Try(() => moduleType = type))
+                .Bind(_ => Result.FailIf(moduleType == null, "Module type could not be resolved"));
         }
 
-        protected Result<TModuleBuilder> WithAdditionaConfigurationSourcesFrom<TModuleBuilder>(params IConfiguration[] configurations) where TModuleBuilder : ModuleBuilder
+        /// <summary>
+        /// Adds additional configuration sources from the specified configurations.
+        /// </summary>
+        protected Result<TModuleBuilder> WithAdditionalConfigurationSourcesFrom<TModuleBuilder>(params IConfiguration[] configurations) 
+            where TModuleBuilder : ModuleBuilder
         {
-            return configurationBuilder.WithAdditionalConfigurationSourcesFrom(configurations).Bind(_ => Result.Ok((TModuleBuilder)this));
-        }
-        protected Result<TModuleBuilder> WithAdditionaConfigurationsFrom<TModuleBuilder>(params IConfiguration[] configurations) where TModuleBuilder : ModuleBuilder
-        {
-            return configurationBuilder.WithAdditionalConfigurationsFrom(configurations).Bind(_ => Result.Ok((TModuleBuilder)this));
+            return configurationBuilder.WithAdditionalConfigurationSourcesFrom(configurations)
+                .Bind(_ => Result.Ok((TModuleBuilder)this));
         }
 
+        /// <summary>
+        /// Adds additional configurations from the specified configuration sections.
+        /// </summary>
+        protected Result<TModuleBuilder> WithAdditionalConfigurationsFrom<TModuleBuilder>(params IConfiguration[] configurations) 
+            where TModuleBuilder : ModuleBuilder
+        {
+            return configurationBuilder.WithAdditionalConfigurationsFrom(configurations)
+                .Bind(_ => Result.Ok((TModuleBuilder)this));
+        }
+
+        /// <summary>
+        /// Builds an <see cref="IModule"/> instance from the configured settings.
+        /// </summary>
+        /// <returns>A result containing the built module, or failure information.</returns>
+        /// <remarks>
+        /// This method disposes the builder after building. The builder cannot be reused after calling this method.
+        /// </remarks>
         public Result<IModule> Build()
         {
             return configurationBuilder.Build()
-                                       .Bind(configuration => Build<IModule>(new Type[] { typeof(IConfiguration) },
-                                                                             new object[] { configuration }));
+                .Bind(config => BuildModule<IModule>(new[] { typeof(IConfiguration) }, new object[] { config }));
         }
 
-        protected Result<TModule> Build<TModule>(Type[] paramsTypeFilter, object[] ctorParams) where TModule : IModule
+        /// <summary>
+        /// Builds a module of the specified type using the given constructor parameters.
+        /// </summary>
+        protected Result<TModule> BuildModule<TModule>(Type[] paramTypes, object[] paramValues) where TModule : IModule
         {
             try
             {
-                return FailIfDisposed().Bind(() => Result.Try(() =>
-                {
-                    return (TModule)moduleType.GetConstructor(BindingFlags.Instance | BindingFlags.Public,
-                                                              default,
-                                                              paramsTypeFilter,
-                                                              default)
-                                              .Invoke(ctorParams);
-                }));
+                return FailIfDisposed().Bind(() => moduleType.CreateInstance<TModule>(paramTypes, paramValues));
             }
             finally
             {
@@ -116,24 +169,20 @@ namespace Baubit.DI
             }
         }
 
-        /// <summary>
-        /// Checks if the builder has been disposed and returns a failed result if so.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="Result"/> that is successful if the builder is not disposed;
-        /// otherwise, a failed result with <see cref="ModuleBuilderDisposed"/> reason.
-        /// </returns>
         private Result FailIfDisposed()
         {
-            return Result.FailIf(disposedValue, new Error(string.Empty))
-                         .AddReasonIfFailed(new ModuleBuilderDisposed());
+            return Result.FailIf(disposedValue, new Error("Builder has been disposed"))
+                .AddReasonIfFailed(new ModuleBuilderDisposed());
         }
 
-        #region DirectlyDefinedNestedModules
+        #region Configuration Section Helpers
 
-        private static Result<IEnumerable<IConfiguration>> GetDirectlyDefinedModuleSections(IConfiguration configuration)
+        /// <summary>
+        /// Gets the module sources section from the configuration, or null if not defined.
+        /// </summary>
+        public static Result<IConfigurationSection> GetModuleSourcesSectionOrDefault(IConfiguration configuration)
         {
-            return GetModulesSectionOrDefault(configuration).Bind(modulesSection => Result.Try(() => modulesSection?.GetChildren().Cast<IConfiguration>() ?? new List<IConfiguration>()));
+            return Result.Ok(GetModuleSourcesSection(configuration).ValueOrDefault);
         }
 
         private static Result<IConfigurationSection> GetModulesSectionOrDefault(IConfiguration configuration)
@@ -141,35 +190,29 @@ namespace Baubit.DI
             return Result.Ok(GetModulesSection(configuration).ValueOrDefault);
         }
 
-        private static Result<IConfigurationSection> GetModulesSection(IConfiguration configurationSection)
+        private static Result<IConfigurationSection> GetModulesSection(IConfiguration configuration)
         {
-            var modulesSection = configurationSection.GetSection(ModulesSectionKey);
-            return modulesSection.Exists() ?
-                   Result.Ok(modulesSection) :
-                   Result.Fail(Enumerable.Empty<IError>()).WithReason(new ModulesNotDefined());
+            var section = configuration.GetSection(ModulesSectionKey);
+            return section.Exists() 
+                ? Result.Ok(section) 
+                : Result.Fail(Enumerable.Empty<IError>()).WithReason(new ModulesNotDefined());
         }
+
+        private static Result<IConfigurationSection> GetModuleSourcesSection(IConfiguration configuration)
+        {
+            var section = configuration.GetSection(ModuleSourcesSectionKey);
+            return section.Exists()
+                ? Result.Ok(section)
+                : Result.Fail(Enumerable.Empty<IError>()).WithReason(new ModuleSourcesNotDefined());
+        }
+
         #endregion
 
-        #region IndirectlyDefinedNestedModules
+        #region IDisposable
 
-        private static Result<IEnumerable<IConfiguration>> GetInDirectlyDefinedModuleSections(IConfiguration configuration)
-        {
-            return GetModuleSourcesSectionOrDefault(configuration).Bind(moduleSourcesSection => Result.Try(() => moduleSourcesSection?.GetChildren().Cast<IConfiguration>() ?? new List<IConfiguration>()));
-        }
-
-        public static Result<IConfigurationSection> GetModuleSourcesSectionOrDefault(IConfiguration configuration)
-        {
-            return Result.Ok(GetModuleSourcesSection(configuration).ValueOrDefault);
-        }
-
-        private static Result<IConfigurationSection> GetModuleSourcesSection(IConfiguration configurationSection)
-        {
-            var moduleSourcesSection = configurationSection.GetSection(ModuleSourcesSectionKey);
-            return moduleSourcesSection.Exists() ?
-                   Result.Ok(moduleSourcesSection) :
-                   Result.Fail(Enumerable.Empty<IError>()).WithReason(new ModuleSourcesNotDefined());
-        }
-
+        /// <summary>
+        /// Releases the resources used by the module builder.
+        /// </summary>
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -184,60 +227,109 @@ namespace Baubit.DI
             }
         }
 
+        /// <summary>
+        /// Releases all resources used by the module builder.
+        /// </summary>
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
 
         #endregion
     }
-    public sealed class ModuleBuilder<TModule, TConfiguration> : ModuleBuilder where TModule : AModule<TConfiguration> where TConfiguration : AConfiguration
+
+    /// <summary>
+    /// Generic builder class for creating strongly-typed <see cref="AModule{TConfiguration}"/> instances.
+    /// </summary>
+    /// <typeparam name="TModule">The type of module to build.</typeparam>
+    /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
+    public sealed class ModuleBuilder<TModule, TConfiguration> : ModuleBuilder 
+        where TModule : AModule<TConfiguration> 
+        where TConfiguration : AConfiguration
     {
-        private List<IModule> nestedModules = new List<IModule>();
+        private readonly List<IModule> nestedModules = new List<IModule>();
+        private readonly List<Action<TConfiguration>> overrideHandlers = new List<Action<TConfiguration>>();
+
         private ModuleBuilder(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder) : base(configurationBuilder)
         {
-            
+            moduleType = typeof(TModule);
         }
 
+        /// <summary>
+        /// Creates a new <see cref="ModuleBuilder{TModule, TConfiguration}"/> with the specified configuration builder.
+        /// </summary>
         public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder)
         {
             return Result.Try(() => new ModuleBuilder<TModule, TConfiguration>(configurationBuilder));
         }
 
-        public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModules(params IModule[] nestedModules)
+        public Result<ModuleBuilder<TModule, TConfiguration>> WithOverrideHandlers(params Action<TConfiguration>[] overrideHandlers)
         {
-            return Result.Try(() => { this.nestedModules.AddRange(nestedModules); }).Bind(() => Result.Ok(this));
+            return Result.Try(() => this.overrideHandlers.AddRange(overrideHandlers)).Bind(() => Result.Ok(this));
         }
 
+        /// <summary>
+        /// Adds nested modules to the module being built.
+        /// </summary>
+        public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModules(params IModule[] modules)
+        {
+            return Result.Try(() => 
+            { 
+                nestedModules.AddRange(modules); 
+                return this; 
+            });
+        }
+
+        /// <summary>
+        /// Adds nested modules loaded from the specified configuration.
+        /// </summary>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModulesFrom(IConfiguration configuration)
         {
-            return CreateMany(configuration).Bind(moduleBuilders => Result.Try(() => moduleBuilders.Select(moduleBuilder => moduleBuilder.Build().ThrowIfFailed().Value)))
-                                            .Bind(modules => WithNestedModules(modules.ToArray()));
+            return CreateMany(configuration)
+                .Bind(builders => Result.Try(() => builders.Select(b => b.Build().ThrowIfFailed().Value)))
+                .Bind(modules => WithNestedModules(modules.ToArray()));
         }
 
+        /// <summary>
+        /// Adds nested modules loaded from multiple configurations.
+        /// </summary>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModulesFrom(params IConfiguration[] configurations)
         {
-            try
+            return Result.Try(() =>
             {
-                foreach (var configuration in configurations)
+                foreach (var config in configurations)
                 {
-                    WithNestedModulesFrom(configuration).ThrowIfFailed();
+                    WithNestedModulesFrom(config).ThrowIfFailed();
                 }
-                return Result.Ok(this);
-            }
-            catch (Exception exp)
-            {
-                return Result.Fail(new ExceptionalError(exp));
-            }
+                return this;
+            });
         }
 
+        /// <summary>
+        /// Builds the strongly-typed module instance.
+        /// </summary>
+        /// <remarks>
+        /// This method disposes the builder after building. The builder cannot be reused after calling this method.
+        /// </remarks>
         public new Result<TModule> Build()
         {
             return ((ConfigurationBuilder<TConfiguration>)configurationBuilder).Build()
-                                                                               .Bind(configuration => Build<TModule>(new Type[] { typeof(TConfiguration), typeof(List<IModule>) },
-                                                                                                                     new object[] { configuration, nestedModules }));
+                                                                               .Bind(CallOverrideHandlers)
+                                                                               .Bind(config => BuildModule<TModule>(
+                                                                                   new[] { typeof(TConfiguration), typeof(List<IModule>) }, 
+                                                                                   new object[] { config, nestedModules }));
+        }
+
+        private Result<TConfiguration> CallOverrideHandlers(TConfiguration configuration)
+        {
+            return Result.Try(() => 
+            {
+                foreach(var overrideHandler in overrideHandlers)
+                {
+                    overrideHandler?.Invoke(configuration);
+                }
+            }).Bind(() => Result.Ok(configuration));
         }
     }
 }
