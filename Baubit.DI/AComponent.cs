@@ -46,9 +46,9 @@ namespace Baubit.DI
         /// <summary>
         /// Builds the component by adding modules to the component builder.
         /// </summary>
-        /// <param name="featureBuilder">The component builder to configure.</param>
+        /// <param name="componentBuilder">The component builder to configure.</param>
         /// <returns>A result containing the configured component builder.</returns>
-        protected abstract Result<ComponentBuilder> Build(ComponentBuilder featureBuilder);
+        protected abstract Result<ComponentBuilder> Build(ComponentBuilder componentBuilder);
 
         /// <summary>
         /// Returns an enumerator that iterates through the modules in this component.
