@@ -1,55 +1,84 @@
-﻿// =============================================================================
-// Pattern 3: Hybrid Loading (appsettings.json + IComponent)
-// =============================================================================
-// This pattern combines BOTH configuration-based and code-based module loading.
-// Modules from appsettings.json are loaded alongside modules from IComponent.
-//
-// Use this pattern when:
-// - Some modules need external configuration (database connections, API keys)
-// - Some modules need compile-time configuration or code-based logic
-// - You want to extend configuration-based modules with additional code-based ones
-// 
-// Loading order:
-// 1. Components from componentsFactory are loaded first
-// 2. Modules from appsettings.json "modules" section are loaded second
-// =============================================================================
+﻿// ============================================================================
+// Pattern 3: Hybrid (appsettings.json + IComponent)
+// ============================================================================
+// Combines BOTH configuration-based and code-based module loading.
+// Components from code are loaded first, then modules from appsettings.json.
+// This is the most flexible pattern.
+// ============================================================================
 
-using Microsoft.Extensions.Hosting;
 using Baubit.DI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace SampleConsoleApp
+namespace SampleConsoleApp;
+
+/// <summary>
+/// Interface for a logging service - different from IGreetingService
+/// so we can demonstrate both modules being loaded.
+/// </summary>
+interface ILoggerService
 {
-    public class ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent
-    {
-        /// <summary>
-        /// Demonstrates hybrid loading - combining appsettings.json with IComponent.
-        /// 
-        /// This approach allows you to:
-        /// - Load modules defined in appsettings.json
-        /// - Add additional modules defined in code via componentsFactory
-        /// - Override or extend configuration-based behavior
-        /// </summary>
-        public static async Task RunAsync()
-        {
-            // CreateApplicationBuilder loads appsettings.json
-            // componentsFactory adds additional modules from code
-            // Both sources of modules are combined
-            await Host.CreateApplicationBuilder()
-                      .UseConfiguredServiceProviderFactory(componentsFactory: BuildComponents)
-                      .Build()
-                      .RunAsync();
-        }
+    void Log(string message);
+}
 
-        /// <summary>
-        /// Factory method that creates additional IComponent instances.
-        /// These components are loaded alongside modules from appsettings.json.
-        /// </summary>
-        private static IComponent[] BuildComponents()
+class LoggerService : ILoggerService
+{
+    private readonly string _prefix;
+
+    public LoggerService(string prefix) => _prefix = prefix;
+
+    public void Log(string message) => Console.WriteLine($"  [{_prefix}] {message}");
+}
+
+class LoggerModuleConfiguration : AConfiguration
+{
+    public string Prefix { get; set; } = "LOG";
+}
+
+class LoggerModule : AModule<LoggerModuleConfiguration>
+{
+    public LoggerModule(LoggerModuleConfiguration config, List<IModule>? nestedModules = null)
+        : base(config, nestedModules) { }
+
+    public override void Load(IServiceCollection services)
+    {
+        services.AddSingleton<ILoggerService>(new LoggerService(Configuration.Prefix));
+        base.Load(services);
+    }
+}
+
+class LoggerComponent : AComponent
+{
+    protected override FluentResults.Result<ComponentBuilder> Build(ComponentBuilder builder)
+    {
+        return builder.WithModule<LoggerModule, LoggerModuleConfiguration>(config =>
         {
-            // This component adds modules programmatically
-            // They will be loaded IN ADDITION TO modules from appsettings.json
-            return [new MyComponent()];
-        }
+            config.Prefix = "HYBRID";
+        });
+    }
+}
+
+public static class ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent
+{
+    public static async Task RunAsync()
+    {
+        // Build host with modules from BOTH appsettings.json AND code
+        var builder = Host.CreateApplicationBuilder();
+        builder.UseConfiguredServiceProviderFactory(
+            componentsFactory: () => [new LoggerComponent()]
+        );
+        
+        using var host = builder.Build();
+        
+        // IGreetingService comes from appsettings.json (GreetingModule)
+        var greetingService = host.Services.GetRequiredService<IGreetingService>();
+        Console.WriteLine($"  From appsettings.json: {greetingService.GetGreeting()}");
+        
+        // ILoggerService comes from code (LoggerComponent)
+        var loggerService = host.Services.GetRequiredService<ILoggerService>();
+        loggerService.Log("From code component");
+        
+        await Task.CompletedTask;
     }
 }
 

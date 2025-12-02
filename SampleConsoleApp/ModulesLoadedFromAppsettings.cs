@@ -1,40 +1,31 @@
-﻿// =============================================================================
-// Pattern 1: Loading Modules Purely from appsettings.json
-// =============================================================================
-// This pattern loads ALL modules from configuration (appsettings.json).
-// Module types, their configurations, and nested modules are defined in JSON.
-//
-// Use this pattern when:
-// - Module configuration should be externally configurable
-// - You want to change module behavior without recompiling
-// - All module settings can be expressed in configuration
-// =============================================================================
+﻿// ============================================================================
+// Pattern 1: Modules from appsettings.json
+// ============================================================================
+// All modules are defined in configuration - no code-based modules.
+// Module types, configurations, and nested modules come from JSON.
+// ============================================================================
 
-using Microsoft.Extensions.Hosting;
 using Baubit.DI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace SampleConsoleApp
+namespace SampleConsoleApp;
+
+public static class ModulesLoadedFromAppsettings
 {
-    public class ModulesLoadedFromAppsettings
+    public static async Task RunAsync()
     {
-        /// <summary>
-        /// Demonstrates loading modules purely from appsettings.json.
-        /// 
-        /// The modules array in appsettings.json defines:
-        /// - Module type (assembly-qualified name)
-        /// - Module configuration (in "configuration" section)
-        /// - Nested modules (if any)
-        /// </summary>
-        public static async Task RunAsync()
-        {
-            // CreateApplicationBuilder loads appsettings.json automatically
-            // UseConfiguredServiceProviderFactory reads the "modules" section
-            // and creates module instances from the configuration
-            await Host.CreateApplicationBuilder()
-                      .UseConfiguredServiceProviderFactory()
-                      .Build()
-                      .RunAsync();
-        }
+        // Build host with modules from appsettings.json only
+        var builder = Host.CreateApplicationBuilder();
+        builder.UseConfiguredServiceProviderFactory();
+        
+        using var host = builder.Build();
+        
+        // Verify the module was loaded from appsettings.json
+        var greetingService = host.Services.GetRequiredService<IGreetingService>();
+        Console.WriteLine($"  {greetingService.GetGreeting()}");
+        
+        await Task.CompletedTask;
     }
 }
 

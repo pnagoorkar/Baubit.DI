@@ -1,11 +1,11 @@
-﻿// =============================================================================
-// SampleConsoleApp - Baubit.DI Usage Examples
-// =============================================================================
-// This file demonstrates three patterns for using Baubit.DI:
-// 1. Loading modules purely from appsettings.json
-// 2. Loading modules purely from code (using IComponent)
-// 3. Combining both approaches (hybrid loading)
-// =============================================================================
+﻿// ============================================================================
+// Baubit.DI Sample Console Application
+// ============================================================================
+// This application demonstrates three patterns for loading DI modules:
+//   Pattern 1: From appsettings.json only
+//   Pattern 2: From code only (IComponent)
+//   Pattern 3: Hybrid - both appsettings.json AND code
+// ============================================================================
 
 using Baubit.DI;
 using FluentResults;
@@ -14,150 +14,110 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SampleConsoleApp;
 
+Console.WriteLine("=== Baubit.DI Sample Application ===\n");
 
-// Run all three patterns in parallel to demonstrate each approach
-var task1 = ModulesLoadedFromAppsettings.RunAsync();
-var task2 = ModulesLoadedFromExplicitlyGivenComponent.RunAsync();
-var task3 = ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent.RunAsync();
+// Run each pattern sequentially so output is clear
+Console.WriteLine("--- Pattern 1: Modules from appsettings.json ---");
+await ModulesLoadedFromAppsettings.RunAsync();
 
-await Task.WhenAll(task1, task2, task3);
+Console.WriteLine("\n--- Pattern 2: Modules from Code (IComponent) ---");
+await ModulesLoadedFromExplicitlyGivenComponent.RunAsync();
 
-// =============================================================================
-// Supporting Types
-// =============================================================================
+Console.WriteLine("\n--- Pattern 3: Hybrid (appsettings.json + IComponent) ---");
+await ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent.RunAsync();
+
+Console.WriteLine("\n=== All patterns completed ===");
+
+// ============================================================================
+// SERVICES
+// ============================================================================
 
 /// <summary>
-/// A simple hosted service that demonstrates service injection.
-/// This service receives MyService through constructor injection.
+/// Interface for the greeting service - allows verification of which module registered it.
 /// </summary>
-class MyHostedService : IHostedService
+interface IGreetingService
 {
-    private readonly MyService myService;
-    
-    public MyHostedService(MyService myService)
-    {
-        this.myService = myService;
-    }
-    
-    public Task StartAsync(CancellationToken cancellationToken)
-    {
-        Console.WriteLine($"Started with {myService.SomeStrProperty}");
-        return Task.CompletedTask;
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
+    string GetGreeting();
 }
 
 /// <summary>
-/// A simple service class that will be registered by modules.
+/// A simple greeting service that returns a configured message.
 /// </summary>
-class MyService
+class GreetingService : IGreetingService
 {
-    public string SomeStrProperty { get; init; }
-    
-    public MyService(string someStrProperty)
+    private readonly string _message;
+
+    public GreetingService(string message)
     {
-        SomeStrProperty = someStrProperty;
+        _message = message;
     }
+
+    public string GetGreeting() => _message;
 }
 
-// =============================================================================
-// Module Configuration and Module Definition
-// =============================================================================
+// ============================================================================
+// MODULE CONFIGURATION
+// ============================================================================
 
 /// <summary>
-/// Configuration class for MyModule.
-/// Inherits from AConfiguration which allows binding from IConfiguration sections.
-/// This configuration can be defined in appsettings.json or set programmatically.
+/// Configuration for GreetingModule.
+/// - When loaded from appsettings.json, properties are bound automatically
+/// - When created in code, properties are set directly
 /// </summary>
-class MyModuleConfiguration : AConfiguration
+class GreetingModuleConfiguration : AConfiguration
 {
-    /// <summary>
-    /// A string property that will be passed to MyService.
-    /// </summary>
-    public string? MyStringProperty { get; set; }
+    public string Message { get; set; } = "Default greeting";
 }
 
+// ============================================================================
+// MODULE DEFINITION
+// ============================================================================
+
 /// <summary>
-/// A module that registers MyHostedService and MyService.
-/// Modules encapsulate service registrations and can be composed hierarchically.
-/// 
-/// Key features demonstrated:
-/// - Two constructor patterns (IConfiguration vs explicit configuration)
-/// - Service registration in Load method
-/// - Calling base.Load() to load nested modules
+/// A module that registers IGreetingService.
+/// Demonstrates:
+/// - Two constructors (IConfiguration vs typed configuration)
+/// - Service registration in Load()
+/// - Calling base.Load() for nested modules
 /// </summary>
-class MyModule : AModule<MyModuleConfiguration>
+class GreetingModule : AModule<GreetingModuleConfiguration>
 {
-    /// <summary>
-    /// Constructor used when loading from IConfiguration (e.g., appsettings.json).
-    /// The configuration section is automatically bound to MyModuleConfiguration.
-    /// </summary>
-    public MyModule(IConfiguration configuration) : base(configuration)
-    {
-    }
+    // Constructor for loading from appsettings.json
+    public GreetingModule(IConfiguration configuration) : base(configuration) { }
 
-    /// <summary>
-    /// Constructor used when creating the module programmatically.
-    /// Accepts strongly-typed configuration and optional nested modules.
-    /// </summary>
-    public MyModule(MyModuleConfiguration configuration, List<IModule>? nestedModules = null) 
-        : base(configuration, nestedModules)
-    {
-    }
+    // Constructor for programmatic creation
+    public GreetingModule(GreetingModuleConfiguration configuration, List<IModule>? nestedModules = null)
+        : base(configuration, nestedModules) { }
 
-    /// <summary>
-    /// Register services with the DI container.
-    /// IMPORTANT: Always call base.Load(services) to load nested modules.
-    /// </summary>
     public override void Load(IServiceCollection services)
     {
-        // Register your services
-        services.AddHostedService<MyHostedService>();
-        services.AddSingleton(sp => new MyService(Configuration.MyStringProperty ?? "default"));
-        
-        // Always call base.Load to ensure nested modules are loaded
-        base.Load(services);
+        services.AddSingleton<IGreetingService>(new GreetingService(Configuration.Message));
+        base.Load(services); // Always call to load nested modules
     }
 }
 
-// =============================================================================
-// Component Definition
-// =============================================================================
+// ============================================================================
+// COMPONENT DEFINITION
+// ============================================================================
 
 /// <summary>
-/// A component that defines modules programmatically.
-/// Components group related modules and allow code-based module composition.
-/// 
-/// Use components when you need to:
-/// - Define modules and their configuration in code
-/// - Override configuration values programmatically
-/// - Combine with configuration-based module loading
+/// A component that creates GreetingModule in code with a custom message.
 /// </summary>
-class MyComponent : AComponent
+class CodeGreetingComponent : AComponent
 {
-    /// <summary>
-    /// Build the component by adding modules to the ComponentBuilder.
-    /// This is called lazily when the component is first enumerated.
-    /// </summary>
+    private readonly string _message;
+
+    public CodeGreetingComponent(string message)
+    {
+        _message = message;
+    }
+
     protected override Result<ComponentBuilder> Build(ComponentBuilder componentBuilder)
     {
-        // WithModule adds a module with a configuration override handler
-        // The handler receives a default configuration and can modify it
-        return componentBuilder.WithModule<MyModule, MyModuleConfiguration>(ConfigureModule);
-    }
-
-    /// <summary>
-    /// Configure the module's configuration programmatically.
-    /// This is called before the module is created.
-    /// </summary>
-    private void ConfigureModule(MyModuleConfiguration configuration)
-    {
-        configuration.MyStringProperty = "Some string value - from component code";
+        return componentBuilder.WithModule<GreetingModule, GreetingModuleConfiguration>(config =>
+        {
+            config.Message = _message;
+        });
     }
 }
-
 

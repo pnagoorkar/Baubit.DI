@@ -15,8 +15,8 @@
     <SignAssembly>$(SignAssembly)</SignAssembly>
     <AssemblyOriginatorKeyFile>$(KeyFilePath)</AssemblyOriginatorKeyFile>
     <EmitCompilerGeneratedFiles>false</EmitCompilerGeneratedFiles>
-    <Description>TBD</Description>
-    <PackageTags>TBD</PackageTags>
+    <Description>Modular dependency injection framework for .NET with configuration-driven module composition. Load modules from JSON, code, or both.</Description>
+    <PackageTags>dependency-injection;di;modules;configuration;ioc;inversion-of-control;service-collection;hosting;netstandard</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
