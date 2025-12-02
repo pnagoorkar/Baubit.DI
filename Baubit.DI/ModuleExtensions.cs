@@ -10,9 +10,22 @@ using System.Text.Json;
 
 namespace Baubit.DI
 {
+    /// <summary>
+    /// Extension methods for serializing modules to JSON format.
+    /// </summary>
     public static class ModuleExtensions
     {
-
+        /// <summary>
+        /// Serializes a module to a JSON string representation.
+        /// </summary>
+        /// <typeparam name="TModule">The type of module to serialize.</typeparam>
+        /// <param name="module">The module to serialize.</param>
+        /// <param name="jsonSerializerOptions">Options for JSON serialization.</param>
+        /// <returns>A result containing the JSON string, or failure information.</returns>
+        /// <remarks>
+        /// The output includes the module's type, configuration, and nested modules in a format
+        /// that can be used to recreate the module hierarchy.
+        /// </remarks>
         public static Result<string> Serialize<TModule>(this TModule module,
                                                         JsonSerializerOptions jsonSerializerOptions) where TModule : IModule
         {
@@ -35,6 +48,16 @@ namespace Baubit.DI
             });
         }
 
+        /// <summary>
+        /// Serializes a collection of modules to a JSON object with a "modules" array property.
+        /// </summary>
+        /// <param name="modules">The modules to serialize.</param>
+        /// <param name="jsonSerializerOptions">Options for JSON serialization.</param>
+        /// <returns>A result containing the JSON string, or failure information.</returns>
+        /// <remarks>
+        /// The output format is: <c>{ "modules": [ ... ] }</c> where each module includes
+        /// its type, configuration, and nested modules.
+        /// </remarks>
         public static Result<string> SerializeAsJsonObject(this IEnumerable<IModule> modules,
                                                             JsonSerializerOptions jsonSerializerOptions)
         {
