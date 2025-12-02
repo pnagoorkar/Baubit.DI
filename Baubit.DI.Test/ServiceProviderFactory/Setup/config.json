@@ -1,0 +1,7 @@
+{
+  "modules": [
+    {
+      "type": "Baubit.DI.Test.ServiceProviderFactory.Setup.TestModule, Baubit.DI.Test"
+    }
+  ]
+}
