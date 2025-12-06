@@ -274,5 +274,100 @@ namespace Baubit.DI.Test.ModuleExtensions
         }
 
         #endregion
+
+        #region TryFlatten Tests
+
+        [Fact]
+        public void TryFlatten_WithNoNestedModules_ReturnsListWithSingleModule()
+        {
+            // Arrange
+            var config = new TestConfiguration { TestValue = "test" };
+            var module = new TestModule(config);
+
+            // Act
+            var result = module.TryFlatten();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value);
+            Assert.Same(module, result.Value[0]);
+        }
+
+        [Fact]
+        public void TryFlatten_WithNestedModules_ReturnsFlattendList()
+        {
+            // Arrange
+            var nestedConfig1 = new TestConfiguration { TestValue = "nested1" };
+            var nestedModule1 = new TestModule(nestedConfig1);
+            var nestedConfig2 = new TestConfiguration { TestValue = "nested2" };
+            var nestedModule2 = new TestModule(nestedConfig2);
+            var parentConfig = new TestConfiguration { TestValue = "parent" };
+            var parentModule = new TestModule(parentConfig, new List<IModule> { nestedModule1, nestedModule2 });
+
+            // Act
+            var result = parentModule.TryFlatten();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(3, result.Value.Count);
+            Assert.Same(parentModule, result.Value[0]);
+            Assert.Same(nestedModule1, result.Value[1]);
+            Assert.Same(nestedModule2, result.Value[2]);
+        }
+
+        [Fact]
+        public void TryFlatten_WithDeeplyNestedModules_ReturnsAllModulesFlattened()
+        {
+            // Arrange
+            var deepestConfig = new TestConfiguration { TestValue = "deepest" };
+            var deepestModule = new TestModule(deepestConfig);
+            var middleConfig = new TestConfiguration { TestValue = "middle" };
+            var middleModule = new TestModule(middleConfig, new List<IModule> { deepestModule });
+            var topConfig = new TestConfiguration { TestValue = "top" };
+            var topModule = new TestModule(topConfig, new List<IModule> { middleModule });
+
+            // Act
+            var result = topModule.TryFlatten();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(3, result.Value.Count);
+            Assert.Same(topModule, result.Value[0]);
+            Assert.Same(middleModule, result.Value[1]);
+            Assert.Same(deepestModule, result.Value[2]);
+        }
+
+        [Fact]
+        public void TryFlatten_WithListParameter_AddsToExistingList()
+        {
+            // Arrange
+            var config = new TestConfiguration { TestValue = "test" };
+            var module = new TestModule(config);
+            var modules = new List<IModule>();
+
+            // Act
+            var result = module.TryFlatten(modules);
+
+            // Assert
+            Assert.True(result);
+            Assert.Single(modules);
+            Assert.Same(module, modules[0]);
+        }
+
+        [Fact]
+        public void TryFlatten_WithNullListParameter_CreatesNewList()
+        {
+            // Arrange
+            var config = new TestConfiguration { TestValue = "test" };
+            var module = new TestModule(config);
+
+            // Act
+            var result = module.TryFlatten(null!);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        #endregion
     }
 }
