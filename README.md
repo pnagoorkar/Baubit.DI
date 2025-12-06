@@ -408,26 +408,65 @@ Extension methods for `IHostApplicationBuilder`.
 </details>
 
 <details>
-<summary><strong>ServiceProviderFactory</strong></summary>
+<summary><strong>IServiceProviderFactory / IServiceProviderFactory&lt;TContainerBuilder&gt;</strong></summary>
 
-Default service provider factory that loads modules from configuration.
+Interface for service provider factories that can be configured via host application builders.
+
+| Member | Description |
+|--------|-------------|
+| `UseConfiguredServiceProviderFactory<THostApplicationBuilder>(IHostApplicationBuilder)` | Configure host builder with this factory |
+| `InternalFactory` | The internal factory wrapped by this instance (generic version only) |
+| `Modules` | Collection of loaded modules (generic version only) |
+| `Load(TContainerBuilder)` | Load modules into container (generic version only) |
+
+</details>
+
+<details>
+<summary><strong>AServiceProviderFactory&lt;TContainerBuilder&gt;</strong></summary>
+
+Abstract base class for service provider factories that integrate module-based dependency injection with custom container builders.
+
+| Constructor | Description |
+|-------------|-------------|
+| `AServiceProviderFactory(IServiceProviderFactory<TContainerBuilder>, IConfiguration, IComponent[])` | Create with internal factory, configuration, and components |
+
+| Property | Description |
+|----------|-------------|
+| `InternalFactory` | The internal service provider factory being wrapped |
+| `Modules` | Flattened collection of all loaded modules |
 
 | Method | Description |
 |--------|-------------|
+| `Load(TContainerBuilder)` | Abstract method to load modules into the container builder |
+| `UseConfiguredServiceProviderFactory<THostApplicationBuilder>(IHostApplicationBuilder)` | Configure host builder with this factory |
+
+</details>
+
+<details>
+<summary><strong>ServiceProviderFactory</strong></summary>
+
+Default service provider factory that uses `IServiceCollection` for dependency injection.
+
+| Constructor | Description |
+|-------------|-------------|
 | `ServiceProviderFactory(IConfiguration, IComponent[])` | Create with configuration and components |
-| `ServiceProviderFactory(ServiceProviderOptions, IConfiguration, IComponent[])` | Create with options |
-| `Load(IServiceCollection)` | Load all modules into services |
-| `UseConfiguredServiceProviderFactory(IHostApplicationBuilder)` | Configure host builder |
+| `ServiceProviderFactory(DefaultServiceProviderFactory, IConfiguration, IComponent[])` | Create with specific default factory, configuration, and components |
+
+| Method | Description |
+|--------|-------------|
+| `Load(IServiceCollection)` | Load all modules into the service collection |
 
 </details>
 
 <details>
 <summary><strong>ModuleExtensions</strong></summary>
 
-Extension methods for serializing modules.
+Extension methods for module operations.
 
 | Method | Description |
 |--------|-------------|
+| `TryFlatten<TModule>(TModule)` | Flatten a module and its nested modules into a flat list |
+| `TryFlatten<TModule>(TModule, List<IModule>)` | Flatten a module into an existing list |
 | `Serialize(JsonSerializerOptions)` | Serialize a module to JSON string |
 | `SerializeAsJsonObject(JsonSerializerOptions)` | Serialize modules collection to JSON object |
 
@@ -445,6 +484,7 @@ Extension methods for serializing modules.
 | `modules` | Array of nested module definitions (inside `configuration`) |
 | `moduleSources` | Array of external configuration sources for modules |
 | `serviceProviderFactoryType` | Custom service provider factory type (optional) |
+
 ---
 ## Extensions
 Look at [Baubit.DI.Extensions](https://github.com/pnagoorkar/Baubit.DI.Extensions)
