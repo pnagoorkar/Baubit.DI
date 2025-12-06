@@ -15,12 +15,12 @@ namespace Baubit.DI
     /// <see cref="WithModule{TModule, TConfiguration}(ConfigurationBuilder{TConfiguration})"/> methods.
     /// Call <see cref="Build"/> to create the final component.
     /// </remarks>
-    public class ComponentBuilder : IDisposable
+    public sealed class ComponentBuilder : IDisposable
     {
         private List<IModule> modules = new List<IModule>();
         private bool disposedValue;
 
-        protected ComponentBuilder()
+        private ComponentBuilder()
         {
 
         }
@@ -111,7 +111,7 @@ namespace Baubit.DI
         /// Releases the resources used by this builder.
         /// </summary>
         /// <param name="disposing">True if called from Dispose(); false if called from a finalizer.</param>
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
