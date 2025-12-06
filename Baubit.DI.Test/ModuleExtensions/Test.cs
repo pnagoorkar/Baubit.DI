@@ -294,7 +294,7 @@ namespace Baubit.DI.Test.ModuleExtensions
         }
 
         [Fact]
-        public void TryFlatten_WithNestedModules_ReturnsFlattendList()
+        public void TryFlatten_WithNestedModules_ReturnsFlattenedList()
         {
             // Arrange
             var nestedConfig1 = new TestConfiguration { TestValue = "nested1" };
