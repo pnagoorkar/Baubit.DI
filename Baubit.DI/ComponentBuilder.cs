@@ -111,7 +111,7 @@ namespace Baubit.DI
         /// Releases the resources used by this builder.
         /// </summary>
         /// <param name="disposing">True if called from Dispose(); false if called from a finalizer.</param>
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposedValue)
             {

@@ -211,46 +211,6 @@ namespace Baubit.DI.Test.AModule
             Assert.Equal(initialCount, services.Count);
         }
 
-        [Fact]
-        public void Load_WithNestedModules_LoadsAllNestedModules()
-        {
-            // Arrange
-            var nestedModule1 = new TestModule(new TestConfiguration(), new List<IModule>());
-            var nestedModule2 = new TestModule(new TestConfiguration(), new List<IModule>());
-            var nestedModules = new List<IModule> { nestedModule1, nestedModule2 };
-            var config = new TestConfiguration();
-            var parentModule = new TestModule(config, nestedModules);
-            var services = new ServiceCollection();
-
-            // Act
-            parentModule.Load(services);
-
-            // Assert - Both nested modules should have their Load called
-            Assert.True(nestedModule1.LoadCalled);
-            Assert.True(nestedModule2.LoadCalled);
-        }
-
-        [Fact]
-        public void Load_WithMultipleNestedModules_LoadsInOrder()
-        {
-            // Arrange
-            var loadOrder = new List<string>();
-            var nestedModule1 = new TrackingModule("first", loadOrder);
-            var nestedModule2 = new TrackingModule("second", loadOrder);
-            var nestedModules = new List<IModule> { nestedModule1, nestedModule2 };
-            var parentConfig = new TestConfiguration();
-            var parentModule = new TestModule(parentConfig, nestedModules);
-            var services = new ServiceCollection();
-
-            // Act
-            parentModule.Load(services);
-
-            // Assert
-            Assert.Equal(2, loadOrder.Count);
-            Assert.Equal("first", loadOrder[0]);
-            Assert.Equal("second", loadOrder[1]);
-        }
-
         /// <summary>
         /// Helper module that tracks load order
         /// </summary>

@@ -56,17 +56,13 @@ namespace Baubit.DI
         /// <returns>An enumerable of modules that this module depends on.</returns>
         protected virtual IEnumerable<AModule> GetKnownDependencies() => Enumerable.Empty<AModule>();
 
-        /// <summary>
-        /// Registers services with the specified service collection.<br/>
-        /// All extending classes MUST call <code>base.Load(services);</code>  for loading nested modules
-        /// </summary>
-        /// <param name="services">The service collection to register services with.</param>
+
+
         public virtual void Load(IServiceCollection services)
         {
-            foreach (var nestedModule in NestedModules)
-            {
-                nestedModule.Load(services);
-            }
+            // NO ACTION NEEDED. 
+            // Modules are flattened by the
+            // service provider factory and loaded there
         }
     }
 
