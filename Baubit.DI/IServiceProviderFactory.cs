@@ -1,5 +1,6 @@
 ﻿using FluentResults;
 using Microsoft.Extensions.Hosting;
+using System.Collections.Generic;
 
 namespace Baubit.DI
 {
@@ -19,5 +20,12 @@ namespace Baubit.DI
         /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
         /// <returns>A result containing the configured host application builder, or failure information.</returns>
         Result<THostApplicationBuilder> UseConfiguredServiceProviderFactory<THostApplicationBuilder>(THostApplicationBuilder hostApplicationBuilder) where THostApplicationBuilder : IHostApplicationBuilder;
+    }
+
+    public interface IServiceProviderFactory<TContainerBuilder> : IServiceProviderFactory
+    {
+        Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> InternalFactory { get; }
+        List<IModule> Modules { get; }
+        void Load(TContainerBuilder containerBuilder);
     }
 }

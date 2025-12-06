@@ -1,84 +1,55 @@
-﻿using Baubit.Traceability;
-using FluentResults;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Baubit.DI
 {
     /// <summary>
-    /// Default implementation of <see cref="IServiceProviderFactory"/> that loads modules from configuration.
+    /// Default service provider factory that uses <see cref="IServiceCollection"/> for dependency injection.
     /// </summary>
     /// <remarks>
-    /// This factory extends <see cref="DefaultServiceProviderFactory"/> and loads modules
-    /// defined in the configuration's "modules" and "moduleSources" sections.
+    /// This factory loads modules from configuration and components, then registers all services
+    /// into the standard .NET dependency injection container. This is the default factory used when
+    /// no custom factory type is specified in configuration.
+    /// Thread safety: All public members are thread-safe.
     /// </remarks>
-    public class ServiceProviderFactory : DefaultServiceProviderFactory, IServiceProviderFactory
+    public class ServiceProviderFactory : AServiceProviderFactory<IServiceCollection>
     {
-        private readonly List<IModule> modules = new List<IModule>();
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class
-        /// with default options.
+        /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class.
         /// </summary>
-        /// <param name="configuration">Host builder configuration containing module definitions.</param>
-        /// <param name="components">Optional array of pre-built components to include.</param>
-        public ServiceProviderFactory(IConfiguration configuration, IComponent[] components) : base()
+        /// <param name="defaultServiceProviderFactory">The default .NET service provider factory.</param>
+        /// <param name="configuration">The configuration to load modules from.</param>
+        /// <param name="components">Optional array of components containing modules to load programmatically.</param>
+        public ServiceProviderFactory(DefaultServiceProviderFactory defaultServiceProviderFactory,
+                                      IConfiguration configuration,
+                                      IComponent[] components) : base(new DefaultServiceProviderFactory(), configuration, components)
         {
-            Initialize(configuration, components);
+
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class
-        /// with the specified <paramref name="options"/>.
+        /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class using the default factory.
         /// </summary>
-        /// <param name="options">The service provider options to use for this instance.</param>
-        /// <param name="configuration">Host builder configuration containing module definitions.</param>
-        /// <param name="components">Optional array of pre-built components to include.</param>
-        public ServiceProviderFactory(ServiceProviderOptions options, IConfiguration configuration, IComponent[] components) : base(options)
+        /// <param name="configuration">The configuration to load modules from.</param>
+        /// <param name="components">Optional array of components containing modules to load programmatically.</param>
+        public ServiceProviderFactory(IConfiguration configuration, IComponent[] components) : this(new DefaultServiceProviderFactory(), configuration, components)
         {
-            Initialize(configuration, components);
         }
 
-        private void Initialize(IConfiguration configuration, IComponent[] components)
+        /// <summary>
+        /// Loads all modules into the service collection.
+        /// </summary>
+        /// <param name="containerBuilder">The service collection to register services into.</param>
+        /// <remarks>
+        /// This method iterates through all flattened modules and calls their <see cref="IModule.Load"/> method
+        /// to register services into the container.
+        /// </remarks>
+        public override void Load(IServiceCollection containerBuilder)
         {
-            if (components != null)
+            foreach (var module in Modules)
             {
-                modules.AddRange(components.SelectMany(component => component));
+                module.Load(containerBuilder);
             }
-            LoadModules(configuration);
-        }
-
-        private void LoadModules(IConfiguration configuration)
-        {
-            ModuleBuilder.CreateMany(configuration)
-                         .Bind(moduleBuilders => Result.Try(() => modules.AddRange(moduleBuilders.Select(moduleBuilder => moduleBuilder.Build().ThrowIfFailed().Value))));
-        }
-
-        /// <summary>
-        /// Loads all configured modules into the specified service collection.
-        /// </summary>
-        /// <param name="services">The service collection to load modules into.</param>
-        public void Load(IServiceCollection services)
-        {
-            foreach (var module in modules)
-            {
-                module.Load(services);
-            }
-        }
-
-        /// <summary>
-        /// Configures the host application builder to use this service provider factory.
-        /// </summary>
-        /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
-        /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
-        /// <returns>A result containing the configured host application builder.</returns>
-        public Result<THostApplicationBuilder> UseConfiguredServiceProviderFactory<THostApplicationBuilder>(THostApplicationBuilder hostApplicationBuilder) where THostApplicationBuilder : IHostApplicationBuilder
-        {
-            hostApplicationBuilder.ConfigureContainer(this, Load);
-            return hostApplicationBuilder;
         }
     }
 }
