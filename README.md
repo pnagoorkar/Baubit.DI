@@ -27,6 +27,8 @@ Modularity framework for .NET with configuration-driven module composition.
 - [Recursive Module Loading](#recursive-module-loading)
 - [API Reference](#api-reference)
 - [Configuration Keys](#configuration-keys)
+- [Extensions](#extensions)
+- [Inspiration](#inspiration)
 - [License](#license)
 
 ## Installation
@@ -443,6 +445,14 @@ Extension methods for serializing modules.
 | `modules` | Array of nested module definitions (inside `configuration`) |
 | `moduleSources` | Array of external configuration sources for modules |
 | `serviceProviderFactoryType` | Custom service provider factory type (optional) |
+---
+## Extensions
+Look at [Baubit.DI.Extensions](https://github.com/pnagoorkar/Baubit.DI.Extensions)
+
+## Inspiration
+
+See [INSPIRATION.md](./INSPIRATION.md) for details on libraries and ideas that influenced this project.
+
 
 ## License
 
