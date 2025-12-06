@@ -75,7 +75,6 @@ public class MyModule : AModule<MyModuleConfiguration>
     public override void Load(IServiceCollection services)
     {
         services.AddSingleton<IMyService>(new MyService(Configuration.ConnectionString));
-        base.Load(services); // IMPORTANT: Always call to load nested modules
     }
 }
 ```
