@@ -58,11 +58,20 @@ namespace Baubit.DI
 
 
 
+        /// <summary>
+        /// Registers services with the specified service collection.
+        /// </summary>
+        /// <param name="services">The service collection to register services with.</param>
+        /// <remarks>
+        /// Override this method in derived classes to register services.
+        /// The base implementation does nothing because modules are flattened by the service provider factory,
+        /// and each flattened module's Load method is called individually to register its services.
+        /// </remarks>
         public virtual void Load(IServiceCollection services)
         {
             // NO ACTION NEEDED. 
-            // Modules are flattened by the
-            // service provider factory and loaded there
+            // Modules are flattened by the service provider factory,
+            // and each module's Load method is called individually.
         }
     }
 

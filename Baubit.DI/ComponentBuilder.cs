@@ -57,10 +57,10 @@ namespace Baubit.DI
             return WithModule<TModule, TConfiguration>(configurationBuilder, overrideHandlers: Array.Empty<Action<TConfiguration>>());
         }
 
-        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> configurationBuildHandler, params Action<TConfiguration>[] overrideHandlers) where TModule : AModule<TConfiguration> where TConfiguration : AConfiguration
+        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator, params Action<TConfiguration>[] overrideHandlers) where TModule : AModule<TConfiguration> where TConfiguration : AConfiguration
         {
             return ConfigurationBuilder<TConfiguration>.CreateNew()
-                                                       .Bind(cb => Result.Try(() => configurationBuildHandler(cb))
+                                                       .Bind(cb => Result.Try(() => cbConfigurator(cb))
                                                                          .Bind(() => WithModule<TModule, TConfiguration>(cb, overrideHandlers)));
         }
 
@@ -69,11 +69,11 @@ namespace Baubit.DI
         /// </summary>
         /// <typeparam name="TModule">The type of module to add.</typeparam>
         /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-        /// <param name="configurationBuildHandler">A handler that configures the configuration builder.</param>
+        /// <param name="cbConfigurator">A handler that configures the configuration builder.</param>
         /// <returns>A result containing this builder for method chaining.</returns>
-        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> configurationBuildHandler) where TModule : AModule<TConfiguration> where TConfiguration : AConfiguration
+        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator) where TModule : AModule<TConfiguration> where TConfiguration : AConfiguration
         {
-            return WithModule<TModule, TConfiguration>(configurationBuildHandler, overrideHandlers: Array.Empty<Action<TConfiguration>>());
+            return WithModule<TModule, TConfiguration>(cbConfigurator, overrideHandlers: Array.Empty<Action<TConfiguration>>());
         }
 
         /// <summary>
@@ -81,11 +81,11 @@ namespace Baubit.DI
         /// </summary>
         /// <typeparam name="TModule">The type of module to add.</typeparam>
         /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-        /// <param name="configurationBuildHandler">A handler that configures the module configuration.</param>
+        /// <param name="configConfigurator">A handler that configures the module configuration.</param>
         /// <returns>A result containing this builder for method chaining.</returns>
-        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<TConfiguration> configurationBuildHandler) where TModule : AModule<TConfiguration> where TConfiguration : AConfiguration
+        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<TConfiguration> configConfigurator) where TModule : AModule<TConfiguration> where TConfiguration : AConfiguration
         {
-            return WithModule<TModule, TConfiguration>(_ => { }, configurationBuildHandler);
+            return WithModule<TModule, TConfiguration>(_ => { }, configConfigurator);
         }
 
         /// <summary>
