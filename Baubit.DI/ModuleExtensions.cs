@@ -15,11 +15,33 @@ namespace Baubit.DI
     /// </summary>
     public static class ModuleExtensions
     {
+        /// <summary>
+        /// Flattens a module hierarchy into a flat list containing the module and all its nested modules recursively.
+        /// </summary>
+        /// <typeparam name="TModule">The type of module to flatten.</typeparam>
+        /// <param name="module">The module to flatten.</param>
+        /// <returns>A result containing a flat list of all modules in the hierarchy, or failure information.</returns>
+        /// <remarks>
+        /// This method recursively traverses the module's nested modules and returns them in a single flat list.
+        /// The root module is included first, followed by its nested modules in depth-first order.
+        /// </remarks>
         public static Result<List<IModule>> TryFlatten<TModule>(this TModule module) where TModule : IModule
         {
             return Result.Try(() => new List<IModule>())
                          .Bind(modules => module.TryFlatten(modules) ? Result.Ok(modules) : Result.Fail(""));
         }
+
+        /// <summary>
+        /// Flattens a module hierarchy into an existing list, adding the module and all its nested modules recursively.
+        /// </summary>
+        /// <typeparam name="TModule">The type of module to flatten.</typeparam>
+        /// <param name="module">The module to flatten.</param>
+        /// <param name="modules">The list to add the flattened modules to.</param>
+        /// <returns>True if the operation succeeded; otherwise false.</returns>
+        /// <remarks>
+        /// This method recursively traverses the module's nested modules and adds them to the provided list.
+        /// The root module is added first, followed by its nested modules in depth-first order.
+        /// </remarks>
         public static bool TryFlatten<TModule>(this TModule module, List<IModule> modules) where TModule : IModule
         {
             if (modules == null) modules = new List<IModule>();
