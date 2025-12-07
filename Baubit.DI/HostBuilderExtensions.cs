@@ -3,7 +3,6 @@ using FluentResults;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using System;
-using System.Reflection;
 
 namespace Baubit.DI
 {
@@ -35,11 +34,29 @@ namespace Baubit.DI
                                                                                                            Func<IComponent[]> componentsFactory = null,
                                                                                                            Action<THostApplicationBuilder, IResultBase> onFailure = null) where THostApplicationBuilder : IHostApplicationBuilder
         {
+            return hostApplicationBuilder.UseConfiguredServiceProviderFactory(configuration, componentsFactory, onFailure, null);
+        }
+
+        public static THostApplicationBuilder UseConfiguredServiceProviderFactory<THostApplicationBuilder, TServiceProviderFactory>(this THostApplicationBuilder hostApplicationBuilder,
+                                                                                                                                    IConfiguration configuration = null,
+                                                                                                                                    Func<IComponent[]> componentsFactory = null,
+                                                                                                                                    Action<THostApplicationBuilder, IResultBase> onFailure = null) where THostApplicationBuilder : IHostApplicationBuilder
+        {
+            return hostApplicationBuilder.UseConfiguredServiceProviderFactory(configuration, componentsFactory, onFailure, typeof(TServiceProviderFactory));
+        }
+
+        private static THostApplicationBuilder UseConfiguredServiceProviderFactory<THostApplicationBuilder>(this THostApplicationBuilder hostApplicationBuilder,
+                                                                                                           IConfiguration configuration = null,
+                                                                                                           Func<IComponent[]> componentsFactory = null,
+                                                                                                           Action<THostApplicationBuilder, IResultBase> onFailure = null, 
+                                                                                                           Type serviceProviderFactoryType = null) where THostApplicationBuilder : IHostApplicationBuilder
+        {
             if (onFailure == null) onFailure = Exit;
             if (configuration != null) hostApplicationBuilder.Configuration.AddConfiguration(configuration);
 
-            var factoryTypeResolutionResult = TypeResolver.TryResolveType(hostApplicationBuilder.Configuration[ServiceProviderFactoryTypeKey]);
+            var factoryTypeResolutionResult = serviceProviderFactoryType == null ? TypeResolver.TryResolveType(hostApplicationBuilder.Configuration[ServiceProviderFactoryTypeKey]) : Result.Ok(serviceProviderFactoryType);
             var factoryType = factoryTypeResolutionResult.ValueOrDefault ?? typeof(ServiceProviderFactory);
+
 
             var registrationResult = factoryType.CreateInstance<IServiceProviderFactory>(new Type[] { typeof(IConfiguration), typeof(IComponent[]) },
                                                                 new object[] { hostApplicationBuilder.Configuration, componentsFactory?.Invoke() }).Bind(serviceProviderFactory => serviceProviderFactory.UseConfiguredServiceProviderFactory(hostApplicationBuilder));
