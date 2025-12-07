@@ -264,6 +264,15 @@ namespace Baubit.DI
             return Result.Try(() => new ModuleBuilder<TModule, TConfiguration>(configurationBuilder));
         }
 
+        /// <summary>
+        /// Adds configuration override handlers that will be invoked after the configuration is built.
+        /// </summary>
+        /// <param name="overrideHandlers">One or more handlers that modify the configuration.</param>
+        /// <returns>A result containing this builder for method chaining.</returns>
+        /// <remarks>
+        /// Override handlers are invoked in the order they are added, allowing you to modify
+        /// the configuration after it has been built from configuration sources.
+        /// </remarks>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithOverrideHandlers(params Action<TConfiguration>[] overrideHandlers)
         {
             return Result.Try(() => this.overrideHandlers.AddRange(overrideHandlers)).Bind(() => Result.Ok(this));

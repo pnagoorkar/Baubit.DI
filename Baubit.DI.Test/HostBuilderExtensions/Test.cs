@@ -107,5 +107,79 @@ namespace Baubit.DI.Test.HostBuilderExtensions
             // Assert - Should not throw and return the builder
             Assert.Same(builder, result);
         }
+
+        [Theory]
+        [InlineData("Baubit.DI.Test;HostBuilderExtensions.Setup.config.json")]
+        public void UseConfiguredServiceProviderFactory_WithGenericFactoryType_UsesSpecifiedFactory(string configFile)
+        {
+            // Arrange
+            CustomServiceProviderFactory.Reset();
+
+            // Act
+            var result = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+                .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
+                .Bind(cb => cb.Build())
+                .Bind(cfg => Result.Try(() =>
+                {
+                    var builder = Host.CreateApplicationBuilder();
+                    builder.UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>(cfg);
+                    return builder.Build();
+                }));
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(CustomServiceProviderFactory.WasCreated);
+            Assert.NotNull(result.Value);
+        }
+
+        [Fact]
+        public void UseConfiguredServiceProviderFactory_WithGenericFactoryType_IgnoresConfiguredFactoryType()
+        {
+            // Arrange
+            CustomServiceProviderFactory.Reset();
+            var configDict = new Dictionary<string, string?>
+            {
+                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "serviceProviderFactoryType", "SomeOtherFactory" } // This should be ignored
+            };
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(configDict)
+                .Build();
+
+            // Act
+            var builder = Host.CreateApplicationBuilder();
+            var result = builder.UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>(configuration);
+
+            // Assert - Should use the generic type parameter and not fail due to invalid config type
+            Assert.Same(builder, result);
+            Assert.True(CustomServiceProviderFactory.WasCreated);
+        }
+
+        [Fact]
+        public void UseConfiguredServiceProviderFactory_WithGenericFactoryTypeAndComponents_LoadsModulesFromBoth()
+        {
+            // Arrange
+            CustomServiceProviderFactory.Reset();
+            var configDict = new Dictionary<string, string?>
+            {
+                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName }
+            };
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(configDict)
+                .Build();
+
+            IComponent[] ComponentsFactory() => new IComponent[] { new ComponentBuilder.Setup.TestComponent() };
+
+            // Act
+            var builder = Host.CreateApplicationBuilder();
+            builder.UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>(
+                configuration, 
+                ComponentsFactory);
+            var result = builder.Build();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.True(CustomServiceProviderFactory.WasCreated);
+        }
     }
 }
