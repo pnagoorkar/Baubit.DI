@@ -329,7 +329,7 @@ await Host.CreateApplicationBuilder()
 
 **Custom factory requirements:**
 - Must implement `IServiceProviderFactory` or `IServiceProviderFactory<TContainerBuilder>`
-- Must have a constructor accepting `(IConfiguration, IComponent[])`
+- Must have a constructor accepting `(IConfiguration configuration, IComponent[] components)`
 - Must derive from `AServiceProviderFactory<TContainerBuilder>` for container integration
 
 ---
