@@ -37,6 +37,20 @@ namespace Baubit.DI
             return hostApplicationBuilder.UseConfiguredServiceProviderFactory(configuration, componentsFactory, onFailure, null);
         }
 
+        /// <summary>
+        /// Configures the host application builder to use a specific service provider factory type.
+        /// </summary>
+        /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
+        /// <typeparam name="TServiceProviderFactory">The type of service provider factory to use. Must implement <see cref="IServiceProviderFactory"/>.</typeparam>
+        /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
+        /// <param name="configuration">Optional additional configuration to add to the builder's configuration.</param>
+        /// <param name="componentsFactory">Optional factory function that returns pre-built components to include.</param>
+        /// <param name="onFailure">Optional callback invoked when factory creation or registration fails. Defaults to exiting the application.</param>
+        /// <returns>The configured host application builder.</returns>
+        /// <remarks>
+        /// This method allows specifying the service provider factory type as a generic type parameter instead of via configuration.
+        /// The specified factory type must have a constructor accepting (IConfiguration, IComponent[]) parameters.
+        /// </remarks>
         public static THostApplicationBuilder UseConfiguredServiceProviderFactory<THostApplicationBuilder, TServiceProviderFactory>(this THostApplicationBuilder hostApplicationBuilder,
                                                                                                                                     IConfiguration configuration = null,
                                                                                                                                     Func<IComponent[]> componentsFactory = null,

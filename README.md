@@ -25,6 +25,7 @@ Modularity framework for .NET with configuration-driven module composition.
   - [Indirect Configuration](#indirect-configuration)
   - [Hybrid Configuration](#hybrid-configuration)
 - [Recursive Module Loading](#recursive-module-loading)
+- [Custom Service Provider Factories](#custom-service-provider-factories)
 - [API Reference](#api-reference)
 - [Configuration Keys](#configuration-keys)
 - [Extensions](#extensions)
@@ -305,6 +306,36 @@ When `Load(services)` is called on `RootModule`, it calls `base.Load(services)`,
 
 ---
 
+## Custom Service Provider Factories
+
+Baubit.DI uses `ServiceProviderFactory` by default, which works with the standard .NET `IServiceCollection`. You can provide custom factory implementations for integration with third-party DI containers.
+See [Baubit.DI.Autofac](https://github.com/pnagoorkar/Baubit.DI.Autofac) for reference.
+
+### Via Configuration
+
+```json
+{
+  "serviceProviderFactoryType": "MyNamespace.CustomServiceProviderFactory, MyAssembly",
+  "modules": [ ]
+}
+```
+
+### Via Generic Type Parameter
+
+```csharp
+await Host.CreateApplicationBuilder()
+          .UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>()
+          .Build()
+          .RunAsync();
+```
+
+**Custom factory requirements:**
+- Must implement `IServiceProviderFactory` or `IServiceProviderFactory<TContainerBuilder>`
+- Must have a constructor accepting `(IConfiguration configuration, IComponent[] components)`
+- Must derive from `AServiceProviderFactory<TContainerBuilder>` for container integration
+
+---
+
 ## API Reference
 
 <details>
@@ -402,7 +433,8 @@ Extension methods for `IHostApplicationBuilder`.
 
 | Method | Description |
 |--------|-------------|
-| `UseConfiguredServiceProviderFactory(IConfiguration, Func<IComponent[]>, Action<T,IResultBase>)` | Configure host with module-based DI |
+| `UseConfiguredServiceProviderFactory(IConfiguration, Func<IComponent[]>, Action<T,IResultBase>)` | Configure host with module-based DI using factory type from configuration or default |
+| `UseConfiguredServiceProviderFactory<THostApplicationBuilder, TServiceProviderFactory>(IConfiguration, Func<IComponent[]>, Action<T,IResultBase>)` | Configure host with module-based DI using specified factory type |
 
 </details>
 
