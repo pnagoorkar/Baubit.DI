@@ -8,6 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)<br/>
 [![Known Vulnerabilities](https://snyk.io/test/github/pnagoorkar/Baubit.DI/badge.svg)](https://snyk.io/test/github/pnagoorkar/Baubit.DI)
 
+**Autofac Extension**: [Baubit.DI.Autofac](https://github.com/pnagoorkar/Baubit.DI.Autofac)
+
 Modularity framework for .NET with configuration-driven module composition.
 
 ## Table of Contents
