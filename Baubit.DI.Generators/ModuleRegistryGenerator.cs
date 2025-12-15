@@ -73,7 +73,7 @@ namespace Baubit.DI.Generators
             }
 
             var validModules = new List<ModuleInfo>();
-            var seenKeys = new Dictionary<string, ModuleInfo>(System.StringComparer.OrdinalIgnoreCase);
+            var seenKeys = new Dictionary<string, ModuleInfo>(StringComparer.OrdinalIgnoreCase);
 
             var imoduleSymbol = compilation.GetTypeByMetadataName(IModuleInterfaceName);
             var iconfigurationSymbol = compilation.GetTypeByMetadataName(IConfigurationInterfaceName);
@@ -204,7 +204,7 @@ namespace Baubit.DI.Generators
             sb.AppendLine("        {");
 
             // Sort modules by key for deterministic output
-            foreach (var module in modules.OrderBy(m => m.Key, System.StringComparer.OrdinalIgnoreCase))
+            foreach (var module in modules.OrderBy(m => m.Key, StringComparer.OrdinalIgnoreCase))
             {
                 var fullTypeName = module.ClassSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 sb.AppendLine($"            factories[\"{EscapeString(module.Key)}\"] = cfg => new {fullTypeName}(cfg);");

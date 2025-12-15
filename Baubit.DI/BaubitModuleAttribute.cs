@@ -17,12 +17,9 @@ namespace Baubit.DI
         /// Initializes a new instance of the <see cref="BaubitModuleAttribute"/> class.
         /// </summary>
         /// <param name="key">The unique key used to identify this module in configuration.</param>
-        /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or whitespace.</exception>
         public BaubitModuleAttribute(string key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("Module key cannot be empty or whitespace.", nameof(key));
 

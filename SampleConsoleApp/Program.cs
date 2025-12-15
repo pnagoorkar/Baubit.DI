@@ -76,9 +76,11 @@ class GreetingModuleConfiguration : BaseConfiguration
 /// <summary>
 /// A module that registers IGreetingService.
 /// Demonstrates:
+/// - Module attribute for secure loading: [BaubitModule("greeting")]
 /// - Two constructors (IConfiguration vs typed configuration)
 /// - Service registration in Load()
 /// - Calling base.Load() for nested modules
+/// Configuration example: { "type": "greeting", "configuration": { "Message": "Hello!" } }
 /// </summary>
 [BaubitModule("greeting")]
 class GreetingModule : BaseModule<GreetingModuleConfiguration>
