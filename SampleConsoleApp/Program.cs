@@ -80,6 +80,7 @@ class GreetingModuleConfiguration : BaseConfiguration
 /// - Service registration in Load()
 /// - Calling base.Load() for nested modules
 /// </summary>
+[BaubitModule("greeting")]
 class GreetingModule : BaseModule<GreetingModuleConfiguration>
 {
     // Constructor for loading from appsettings.json

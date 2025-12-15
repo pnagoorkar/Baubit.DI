@@ -147,11 +147,31 @@ namespace Baubit.DI
         /// <returns>A result containing the built module, or failure information.</returns>
         /// <remarks>
         /// This method disposes the builder after building. The builder cannot be reused after calling this method.
+        /// Attempts to load the module from the secure registry first, then falls back to reflection if enabled.
         /// </remarks>
         public Result<IModule> Build()
         {
-            return configurationBuilder.Build()
-                .Bind(config => BuildModule<IModule>(new[] { typeof(IConfiguration) }, new object[] { config }));
+            try
+            {
+                return configurationBuilder.Build()
+                    .Bind(config =>
+                    {
+                        // Try registry first
+                        var typeKey = config[ModuleTypeKey];
+                        if (!string.IsNullOrWhiteSpace(typeKey) && ModuleRegistry.TryCreate(typeKey, config, out var module))
+                        {
+                            return Result.Ok(module);
+                        }
+
+                        // Fall back to reflection
+                        return BuildModule<IModule>(new[] { typeof(IConfiguration) }, new object[] { config });
+                    });
+            }
+            finally
+            {
+                // Always dispose to prevent reuse
+                Dispose();
+            }
         }
 
         /// <summary>
@@ -159,14 +179,7 @@ namespace Baubit.DI
         /// </summary>
         protected Result<TModule> BuildModule<TModule>(Type[] paramTypes, object[] paramValues) where TModule : IModule
         {
-            try
-            {
-                return FailIfDisposed().Bind(() => moduleType.CreateInstance<TModule>(paramTypes, paramValues));
-            }
-            finally
-            {
-                Dispose();
-            }
+            return FailIfDisposed().Bind(() => moduleType.CreateInstance<TModule>(paramTypes, paramValues));
         }
 
         private Result FailIfDisposed()
@@ -323,11 +336,18 @@ namespace Baubit.DI
         /// </remarks>
         public new Result<TModule> Build()
         {
-            return ((ConfigurationBuilder<TConfiguration>)configurationBuilder).Build()
-                                                                               .Bind(CallOverrideHandlers)
-                                                                               .Bind(config => BuildModule<TModule>(
-                                                                                   new[] { typeof(TConfiguration), typeof(List<IModule>) }, 
-                                                                                   new object[] { config, nestedModules }));
+            try
+            {
+                return ((ConfigurationBuilder<TConfiguration>)configurationBuilder).Build()
+                                                                                   .Bind(CallOverrideHandlers)
+                                                                                   .Bind(config => BuildModule<TModule>(
+                                                                                       new[] { typeof(TConfiguration), typeof(List<IModule>) }, 
+                                                                                       new object[] { config, nestedModules }));
+            }
+            finally
+            {
+                Dispose();
+            }
         }
 
         private Result<TConfiguration> CallOverrideHandlers(TConfiguration configuration)
