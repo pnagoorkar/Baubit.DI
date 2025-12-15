@@ -3,7 +3,7 @@
     /// <summary>
     /// Test configuration for unit tests.
     /// </summary>
-    public class TestConfiguration : AConfiguration
+    public class TestConfiguration : BaseConfiguration
     {
         public string? TestValue { get; set; }
     }

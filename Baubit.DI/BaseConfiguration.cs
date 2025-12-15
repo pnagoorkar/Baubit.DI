@@ -7,7 +7,7 @@
     /// Derive from this class to create strongly-typed configuration classes for your modules.
     /// Configuration classes are bound from <see cref="Microsoft.Extensions.Configuration.IConfiguration"/> sections.
     /// </remarks>
-    public abstract class AConfiguration : Baubit.Configuration.AConfiguration
+    public abstract class BaseConfiguration : Baubit.Configuration.AConfiguration
     {
     }
 }

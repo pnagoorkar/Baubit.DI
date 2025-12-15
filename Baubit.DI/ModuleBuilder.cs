@@ -245,8 +245,8 @@ namespace Baubit.DI
     /// <typeparam name="TModule">The type of module to build.</typeparam>
     /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
     public sealed class ModuleBuilder<TModule, TConfiguration> : ModuleBuilder 
-        where TModule : AModule<TConfiguration> 
-        where TConfiguration : AConfiguration
+        where TModule : BaseModule<TConfiguration> 
+        where TConfiguration : BaseConfiguration
     {
         private readonly List<IModule> nestedModules = new List<IModule>();
         private readonly List<Action<TConfiguration>> overrideHandlers = new List<Action<TConfiguration>>();

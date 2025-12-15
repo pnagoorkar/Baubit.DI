@@ -64,7 +64,7 @@ class GreetingService : IGreetingService
 /// - When loaded from appsettings.json, properties are bound automatically
 /// - When created in code, properties are set directly
 /// </summary>
-class GreetingModuleConfiguration : AConfiguration
+class GreetingModuleConfiguration : BaseConfiguration
 {
     public string Message { get; set; } = "Default greeting";
 }
@@ -80,7 +80,7 @@ class GreetingModuleConfiguration : AConfiguration
 /// - Service registration in Load()
 /// - Calling base.Load() for nested modules
 /// </summary>
-class GreetingModule : AModule<GreetingModuleConfiguration>
+class GreetingModule : BaseModule<GreetingModuleConfiguration>
 {
     // Constructor for loading from appsettings.json
     public GreetingModule(IConfiguration configuration) : base(configuration) { }
@@ -103,7 +103,7 @@ class GreetingModule : AModule<GreetingModuleConfiguration>
 /// <summary>
 /// A component that creates GreetingModule in code with a custom message.
 /// </summary>
-class CodeGreetingComponent : AComponent
+class CodeGreetingComponent : BaseComponent
 {
     private readonly string _message;
 

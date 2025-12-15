@@ -14,7 +14,7 @@ namespace Baubit.DI
         /// <summary>
         /// Gets the configuration associated with this module.
         /// </summary>
-        AConfiguration Configuration { get; }
+        BaseConfiguration Configuration { get; }
 
         /// <summary>
         /// Gets the collection of nested modules that this module depends on.

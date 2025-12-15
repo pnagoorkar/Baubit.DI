@@ -92,7 +92,6 @@ namespace Baubit.DI
         private static void Exit<THostApplicationBuilder>(THostApplicationBuilder hostApplicationBuilder,
                                                           IResultBase result) where THostApplicationBuilder : IHostApplicationBuilder
         {
-            Console.WriteLine(result.ToString());
             Environment.Exit(-1);
         }
     }

@@ -30,12 +30,12 @@ class LoggerService : ILoggerService
     public void Log(string message) => Console.WriteLine($"  [{_prefix}] {message}");
 }
 
-class LoggerModuleConfiguration : AConfiguration
+class LoggerModuleConfiguration : BaseConfiguration
 {
     public string Prefix { get; set; } = "LOG";
 }
 
-class LoggerModule : AModule<LoggerModuleConfiguration>
+class LoggerModule : BaseModule<LoggerModuleConfiguration>
 {
     public LoggerModule(LoggerModuleConfiguration config, List<IModule>? nestedModules = null)
         : base(config, nestedModules) { }
@@ -47,7 +47,7 @@ class LoggerModule : AModule<LoggerModuleConfiguration>
     }
 }
 
-class LoggerComponent : AComponent
+class LoggerComponent : BaseComponent
 {
     protected override FluentResults.Result<ComponentBuilder> Build(ComponentBuilder builder)
     {

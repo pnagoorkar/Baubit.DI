@@ -17,7 +17,7 @@ namespace Baubit.DI
     /// the container builder via the abstract <see cref="Load"/> method.
     /// Thread safety: All public members are thread-safe.
     /// </remarks>
-    public abstract class AServiceProviderFactory<TContainerBuilder> : IServiceProviderFactory<TContainerBuilder>
+    public abstract class BaseServiceProviderFactory<TContainerBuilder> : IServiceProviderFactory<TContainerBuilder>
     {
         /// <summary>
         /// Gets the internal service provider factory that is wrapped by this instance.
@@ -37,7 +37,7 @@ namespace Baubit.DI
         public List<IModule> Modules { get; } = new List<IModule>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AServiceProviderFactory{TContainerBuilder}"/> class.
+        /// Initializes a new instance of the <see cref="BaseServiceProviderFactory{TContainerBuilder}"/> class.
         /// </summary>
         /// <param name="internalFactory">The internal service provider factory to wrap.</param>
         /// <param name="configuration">The configuration to load modules from.</param>
@@ -48,7 +48,7 @@ namespace Baubit.DI
         /// 2. Modules from configuration
         /// All modules are then flattened to resolve nested module hierarchies.
         /// </remarks>
-        public AServiceProviderFactory(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> internalFactory,
+        public BaseServiceProviderFactory(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> internalFactory,
                                        IConfiguration configuration,
                                        IComponent[] components)
         {

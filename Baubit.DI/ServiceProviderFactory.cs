@@ -12,7 +12,7 @@ namespace Baubit.DI
     /// no custom factory type is specified in configuration.
     /// Thread safety: All public members are thread-safe.
     /// </remarks>
-    public class ServiceProviderFactory : AServiceProviderFactory<IServiceCollection>
+    public class ServiceProviderFactory : BaseServiceProviderFactory<IServiceCollection>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class.
