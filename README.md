@@ -63,14 +63,6 @@ Baubit.DI uses compile-time module discovery to eliminate remote code execution 
 - Configuration uses simple string keys, not type names
 - Consumer assemblies can register their own modules using `[GeneratedModuleRegistry]`
 
-**Breaking change from previous versions:**
-```json
-// ❌ Old (insecure): Assembly-qualified type name
-{ "type": "MyNamespace.MyModule, MyAssembly" }
-
-// ✅ New (secure): Simple module key
-{ "type": "mymodule" }
-```
 
 To migrate existing code, add `[BaubitModule("key")]` to your modules and update configuration to use the key instead of the assembly-qualified type name.
 
