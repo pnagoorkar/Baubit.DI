@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using FluentResults;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MsConfigurationBuilder = Microsoft.Extensions.Configuration.ConfigurationBuilder;
 
@@ -260,22 +261,19 @@ namespace Baubit.DI.Test.BaseModule
             Assert.IsAssignableFrom<IReadOnlyList<IModule>>(module.NestedModules);
         }
 
-        [Fact]
-        public void NestedModules_WithNestedModulesInConfiguration_LoadsFromConfiguration()
+        [Theory]
+        [InlineData("Baubit.DI.Test;BaseModule.Setup.config.json")]
+        public void NestedModules_WithNestedModulesInConfiguration_LoadsFromConfiguration(string configFile)
         {
-            // Arrange
-            var configDict = new Dictionary<string, string?>
-            {
-                { "TestValue", "parent" },
-                { "modules:0:type", "test-basemodule" },
-                { "modules:0:TestValue", "nested1" }
-            };
-            var configuration = new MsConfigurationBuilder()
-                .AddInMemoryCollection(configDict)
-                .Build();
-
             // Act
-            var module = new TestModule(configuration);
+            var moduleBuildResult = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+                                                                             .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
+                                                                             .Bind(cb => cb.Build())
+                                                                             .Bind(cfg => Result.Try(() => new TestModule(cfg)));
+
+            Assert.True(moduleBuildResult.IsSuccess);
+
+            var module = moduleBuildResult.Value;
 
             // Assert
             Assert.Single(module.NestedModules);

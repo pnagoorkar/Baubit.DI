@@ -144,20 +144,13 @@ namespace Baubit.DI
             {
                 return FailIfDisposed().Bind(() => configurationBuilder.Build()
                                        .Bind(config =>
-                                       {
-                                           // Load module from secure registry only
-                                           var typeKey = config[ModuleTypeKey];
-                                           if (string.IsNullOrWhiteSpace(typeKey))
-                                           {
-                                               return Result.Fail<IModule>("Module type key is required but was not specified in configuration.");
-                                           }
-                                       
-                                           if (ModuleRegistry.TryCreate(typeKey, config, out var module))
+                                       {                                       
+                                           if (ModuleRegistry.TryCreate(moduleTypeValue, config, out var module))
                                            {
                                                return Result.Ok(module);
                                            }
                                        
-                                           return Result.Fail<IModule>($"Unknown module key '{typeKey}'. Ensure the module is annotated with [BaubitModule(\"{typeKey}\")] attribute.");
+                                           return Result.Fail<IModule>($"Unknown module key '{moduleTypeValue}'. Ensure the module is annotated with [BaubitModule(\"{moduleTypeValue}\")] attribute.");
                                        }));
             }
             finally

@@ -1,0 +1,10 @@
+{
+  "modules": [
+    {
+      "type": "test-basemodule",
+      "configuration": {
+        "testValue": "42"
+      }
+    }
+  ]
+}

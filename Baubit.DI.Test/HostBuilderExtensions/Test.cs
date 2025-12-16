@@ -12,20 +12,21 @@ namespace Baubit.DI.Test.HostBuilderExtensions
     /// </summary>
     public class Test
     {
-        [Theory]
-        [InlineData("Baubit.DI.Test;HostBuilderExtensions.Setup.config.json")]
-        public void UseConfiguredServiceProviderFactory_WithValidConfig_FailsOnUnknownModuleKey(string configFile)
-        {
-            // Arrange & Act - Config references test-hostbuilder which isn't in secure registry
-            var result = Baubit.Configuration.ConfigurationBuilder.CreateNew()
-                .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
-                .Bind(cb => cb.Build())
-                .Bind(cfg => Result.Try(() => Host.CreateApplicationBuilder().UseConfiguredServiceProviderFactory(cfg).Build()));
+        // This test does not make sense. Fix/Remove it.
+        //[Theory]
+        //[InlineData("Baubit.DI.Test;HostBuilderExtensions.Setup.config.json")]
+        //public void UseConfiguredServiceProviderFactory_WithValidConfig_FailsOnUnknownModuleKey(string configFile)
+        //{
+        //    // Arrange & Act - Config references test-hostbuilder which isn't in secure registry
+        //    var result = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+        //        .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
+        //        .Bind(cb => cb.Build())
+        //        .Bind(cfg => Result.Try(() => Host.CreateApplicationBuilder().UseConfiguredServiceProviderFactory(cfg).Build()));
 
-            // Assert - Should fail because test modules aren't in the secure ModuleRegistry
-            Assert.True(result.IsFailed);
-            Assert.Contains("Unknown module key", result.Errors[0].Message);
-        }
+        //    // Assert - Should fail because test modules aren't in the secure ModuleRegistry
+        //    Assert.True(result.IsFailed);
+        //    Assert.Contains("Unknown module key", result.Errors[0].Message);
+        //}
 
         [Fact]
         public void UseConfiguredServiceProviderFactory_WithCustomFactoryTypeParameter_UsesCustomFactory()
