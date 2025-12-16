@@ -1,9 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 
 namespace Baubit.DI.Generators
@@ -16,6 +14,7 @@ namespace Baubit.DI.Generators
     [Generator]
     public class ModuleRegistryGenerator : IIncrementalGenerator
     {
+        private const string BaubitDINamespace = "Baubit.DI";
         private const string BaubitModuleAttributeName = "Baubit.DI.BaubitModuleAttribute";
         private const string GeneratedModuleRegistryAttributeName = "Baubit.DI.GeneratedModuleRegistryAttribute";
         private const string IModuleInterfaceName = "Baubit.DI.IModule";
@@ -112,7 +111,7 @@ namespace Baubit.DI.Generators
         private static void ExecuteMainRegistry(Compilation compilation, ImmutableArray<ModuleInfo?> modules, SourceProductionContext context)
         {
             // Only generate for Baubit.DI assembly
-            if (compilation.AssemblyName != "Baubit.DI")
+            if (compilation.AssemblyName != BaubitDINamespace)
             {
                 return;
             }
@@ -144,7 +143,7 @@ namespace Baubit.DI.Generators
             SourceProductionContext context)
         {
             // Skip if this is Baubit.DI assembly (main registry is handled separately)
-            if (compilation.AssemblyName == "Baubit.DI")
+            if (compilation.AssemblyName == BaubitDINamespace)
             {
                 return;
             }
