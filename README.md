@@ -80,7 +80,6 @@ public class MyModule : BaseModule<MyModuleConfiguration>
     public override void Load(IServiceCollection services)
     {
         services.AddSingleton<IMyService>(new MyService(Configuration.ConnectionString));
-        base.Load(services);  // Load nested modules
     }
 }
 ```
@@ -309,7 +308,7 @@ The module system supports recursive loading - modules can contain nested module
 }
 ```
 
-When `Load(services)` is called on `RootModule`, it calls `base.Load(services)`, which iterates through `NestedModules` and calls `Load` on each, creating a recursive loading chain.
+`ServiceProviderFactory` flattens the module graph and loads each module in a depth first manner.
 
 ---
 
