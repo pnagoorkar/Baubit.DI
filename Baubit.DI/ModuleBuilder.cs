@@ -73,7 +73,7 @@ namespace Baubit.DI
                 moduleTypeValue = configuration[ModuleTypeKey];
                 if (string.IsNullOrWhiteSpace(moduleTypeValue))
                 {
-                    throw new InvalidOperationException($"Module type key '{ModuleTypeKey}' is required but was not specified or is empty in configuration.");
+                    throw new InvalidOperationException($"Module type key '{ModuleTypeKey}' is required but was not specified or is empty. Ensure the configuration contains a '{ModuleTypeKey}' key with a valid module identifier.");
                 }
                 return moduleTypeValue;
             })
