@@ -325,6 +325,51 @@ namespace Baubit.DI.Test.ModuleExtensions
             Assert.Equal(42, nestedNumericValueElement.GetInt32());
         }
 
+        [Fact]
+        public void RoundTrip_SerializeLoadSerializeCompare_ProducesIdenticalJson()
+        {
+            // Step 1: Arrange - Create simple modules without nesting for round-trip test
+            var config1 = new TestConfiguration { TestValue = "first-value", NumericValue = 100 };
+            var module1 = new TestModule(config1);
+            var config2 = new TestConfiguration { TestValue = "second-value", NumericValue = 200 };
+            var module2 = new TestModule(config2);
+            var originalModules = new List<IModule> { module1, module2 };
+            var options = new JsonSerializerOptions { WriteIndented = false };
+
+            // Step 2: Serialize module tree to JSON
+            var firstSerializeResult = originalModules.SerializeAsJsonObject(options);
+            Assert.True(firstSerializeResult.IsSuccess);
+            var firstJson = firstSerializeResult.Value;
+
+            // Step 3: Load modules from serialized JSON using ModuleBuilder
+            var configBuilder = new MsConfigurationBuilder();
+            configBuilder.AddJsonStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(firstJson)));
+            var configuration = configBuilder.Build();
+            
+            var loadResult = DI.ModuleBuilder.CreateMany(configuration);
+            Assert.True(loadResult.IsSuccess);
+            var loadedBuilders = loadResult.Value;
+            
+            // Build all loaded modules
+            var loadedModules = new List<IModule>();
+            foreach (var builder in loadedBuilders)
+            {
+                var buildResult = builder.Build();
+                Assert.True(buildResult.IsSuccess);
+                loadedModules.Add(buildResult.Value);
+            }
+            
+            Assert.Equal(2, loadedModules.Count); // Should have 2 modules
+
+            // Step 4: Serialize the loaded modules again
+            var secondSerializeResult = loadedModules.SerializeAsJsonObject(options);
+            Assert.True(secondSerializeResult.IsSuccess);
+            var secondJson = secondSerializeResult.Value;
+
+            // Step 5: Compare JSON strings - they should be identical
+            Assert.Equal(firstJson, secondJson);
+        }
+
         #endregion
 
         #region TryFlatten Tests

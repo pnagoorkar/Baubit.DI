@@ -5,9 +5,9 @@
 //   Pattern 1: From code only (IComponent)
 //   Pattern 2: Hybrid - both appsettings.json AND code
 //
-// NOTE: Secure configuration-based loading with [BaubitModule] is demonstrated
-// in the Baubit.DI library itself (see ExampleModule). Consumer projects
-// can use the programmatic approach shown here.
+// NOTE: This sample shows both programmatic and configuration-based approaches.
+// The GreetingModule uses [BaubitModule("greeting")] to enable secure loading
+// from configuration files.
 // ============================================================================
 
 using Baubit.DI;
