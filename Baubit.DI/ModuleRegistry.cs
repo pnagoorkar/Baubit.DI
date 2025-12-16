@@ -72,6 +72,12 @@ namespace Baubit.DI
         /// </remarks>
         public static bool TryCreate(string key, IConfiguration moduleSection, out IModule module)
         {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                module = default!;
+                return false;
+            }
+
             if (Factories.TryGetValue(key, out var factory))
             {
                 module = factory(moduleSection);

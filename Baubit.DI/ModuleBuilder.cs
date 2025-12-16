@@ -68,10 +68,18 @@ namespace Baubit.DI
         /// </summary>
         private Result<ModuleBuilder> Initialize(IConfiguration configuration)
         {
-            return Result.Try(() => moduleTypeValue = configuration[ModuleTypeKey])
-                         .Bind(_ => WithAdditionalConfigurationSourcesFrom<ModuleBuilder>(configuration))
-                         .Bind(_ => WithAdditionalConfigurationsFrom<ModuleBuilder>(configuration))
-                         .Bind(_ => Result.Ok(this));
+            return Result.Try(() =>
+            {
+                moduleTypeValue = configuration[ModuleTypeKey];
+                if (string.IsNullOrWhiteSpace(moduleTypeValue))
+                {
+                    throw new InvalidOperationException($"Module type key '{ModuleTypeKey}' is required but was not specified or is empty in configuration.");
+                }
+                return moduleTypeValue;
+            })
+            .Bind(_ => WithAdditionalConfigurationSourcesFrom<ModuleBuilder>(configuration))
+            .Bind(_ => WithAdditionalConfigurationsFrom<ModuleBuilder>(configuration))
+            .Bind(_ => Result.Ok(this));
         }
 
         /// <summary>

@@ -82,20 +82,20 @@ namespace Baubit.DI.Test.ModuleBuilder
         [Fact]
         public void CreateNew_WithUnknownModuleKey_ReturnsFailedResult()
         {
-            // Arrange - test module keys are not in registry for test assembly
+            // Arrange - Use a key that truly doesn't exist
             var configDict = new Dictionary<string, string?>
             {
-                { "type", "test-modulebuilder" },
+                { "type", "nonexistent-module-key-12345" },
                 { "TestValue", "test123" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
                 .Build();
 
-            // Act
-            var result = DI.ModuleBuilder.CreateNew(configuration);
+            // Act - Build the module to trigger validation
+            var result = DI.ModuleBuilder.CreateNew(configuration).Bind(b => b.Build());
 
-            // Assert - Should fail because test modules aren't in the secure registry
+            // Assert - Should fail because module key doesn't exist in registry
             Assert.True(result.IsFailed);
             Assert.Contains("Unknown module key", result.Errors[0].Message);
         }
@@ -103,7 +103,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         [Fact]
         public void CreateNew_WithInvalidType_ReturnsFailedResult()
         {
-            // Arrange
+            // Arrange - Assembly-qualified names are treated as keys and won't be found
             var configDict = new Dictionary<string, string?>
             {
                 { "type", "NonExistent.Type, NonExistent.Assembly" }
@@ -112,11 +112,12 @@ namespace Baubit.DI.Test.ModuleBuilder
                 .AddInMemoryCollection(configDict)
                 .Build();
 
-            // Act
-            var result = DI.ModuleBuilder.CreateNew(configuration);
+            // Act - Build the module to trigger validation
+            var result = DI.ModuleBuilder.CreateNew(configuration).Bind(b => b.Build());
 
-            // Assert
+            // Assert - Should fail because this key doesn't exist in registry
             Assert.True(result.IsFailed);
+            Assert.Contains("Unknown module key", result.Errors[0].Message);
         }
 
         [Fact]
