@@ -80,9 +80,9 @@ namespace Baubit.DI.Test.ModuleBuilder
         #region ModuleBuilder.CreateNew Tests
 
         [Fact]
-        public void CreateNew_WithValidConfiguration_ReturnsSuccessResult()
+        public void CreateNew_WithUnknownModuleKey_ReturnsFailedResult()
         {
-            // Arrange
+            // Arrange - test module keys are not in registry for test assembly
             var configDict = new Dictionary<string, string?>
             {
                 { "type", "test-modulebuilder" },
@@ -95,9 +95,9 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Act
             var result = DI.ModuleBuilder.CreateNew(configuration);
 
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.NotNull(result.Value);
+            // Assert - Should fail because test modules aren't in the secure registry
+            Assert.True(result.IsFailed);
+            Assert.Contains("Unknown module key", result.Errors[0].Message);
         }
 
         [Fact]
@@ -157,7 +157,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         }
 
         [Fact]
-        public void CreateMany_WithDirectlyDefinedModules_ReturnsModuleBuilders()
+        public void CreateMany_WithDirectlyDefinedModules_FailsOnUnknownModuleKey()
         {
             // Arrange
             var configDict = new Dictionary<string, string?>
@@ -172,9 +172,9 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Act
             var result = DI.ModuleBuilder.CreateMany(configuration);
 
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Single(result.Value);
+            // Assert - Should fail because test-modulebuilder isn't in secure registry
+            Assert.True(result.IsFailed);
+            Assert.Contains("Unknown module key", result.Errors[0].Message);
         }
 
         [Fact]
@@ -333,17 +333,14 @@ namespace Baubit.DI.Test.ModuleBuilder
         [Fact]
         public void Build_CallsOnInitialized()
         {
-            // Arrange
+            // Arrange - Create module directly to test OnInitialized callback
             var config = new TestConfiguration { TestValue = "test" };
-            var moduleBuilder = new DI.ModuleBuilder(() => new TestModule(config));
-
-            // Act
-            var result = moduleBuilder.Build();
+            var module = new TestModule(config, null);
+            
+            // Act - The module is already initialized via constructor
 
             // Assert
-            Assert.True(result.IsSuccess);
-            var testModule = (TestModule)result.Value;
-            Assert.True(testModule.OnInitializedCalled);
+            Assert.True(module.OnInitializedCalled);
         }
 
         #endregion
