@@ -16,6 +16,7 @@ Modularity framework for .NET with configuration-driven module composition.
 
 - [Installation](#installation)
 - [Overview](#overview)
+- [Security](#security)
 - [Quick Start](#quick-start)
   - [1. Define a Configuration](#1-define-a-configuration)
   - [2. Create a Module](#2-create-a-module)
@@ -29,6 +30,7 @@ Modularity framework for .NET with configuration-driven module composition.
   - [Hybrid Configuration](#hybrid-configuration)
 - [Recursive Module Loading](#recursive-module-loading)
 - [Custom Service Provider Factories](#custom-service-provider-factories)
+- [Consumer Module Registration](#consumer-module-registration)
 - [API Reference](#api-reference)
 - [Configuration Keys](#configuration-keys)
 - [Extensions](#extensions)
@@ -50,6 +52,16 @@ Baubit.DI provides a modular approach to dependency injection where service regi
 - Defined programmatically using `IComponent`
 - Combined using both approaches (hybrid loading)
 - Integrated with `IHostApplicationBuilder` via extension methods
+
+## Security
+
+Baubit.DI uses compile-time module discovery to eliminate remote code execution (RCE) vulnerabilities from configuration-driven module loading. Modules must be annotated with `[BaubitModule]` and discovered at compile time. Configuration can only select from these pre-registered modules using keys, not assembly-qualified type names.
+
+**Key security features:**
+- No reflection-based type loading from configuration
+- Compile-time validation of module definitions
+- Configuration uses simple string keys, not type names
+- Consumer assemblies can register their own modules using `[GeneratedModuleRegistry]`
 
 ## Quick Start
 
@@ -333,7 +345,142 @@ await Host.CreateApplicationBuilder()
 
 ---
 
+## Consumer Module Registration
+
+Consumer projects (test projects, libraries, plugins) can register their own modules using the `[GeneratedModuleRegistry]` attribute.
+
+### Step 1: Reference the Generator
+
+Add the generator as an analyzer in your project:
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="..\Baubit.DI.Generators\Baubit.DI.Generators.csproj" 
+                    OutputItemType="Analyzer" 
+                    ReferenceOutputAssembly="false" />
+</ItemGroup>
+```
+
+### Step 2: Create a Registry Class
+
+```csharp
+using Baubit.DI;
+
+namespace MyProject
+{
+    [GeneratedModuleRegistry]
+    internal static partial class MyModuleRegistry
+    {
+        // Register() method will be generated automatically
+    }
+}
+```
+
+### Step 3: Define Your Modules
+
+```csharp
+[BaubitModule("my-custom-module")]
+public class MyCustomModule : BaseModule<MyConfig>
+{
+    public MyCustomModule(IConfiguration config) : base(config) { }
+    
+    public override void Load(IServiceCollection services)
+    {
+        services.AddSingleton<IMyService, MyService>();
+    }
+}
+```
+
+### Step 4: Register at Startup
+
+```csharp
+// Call before any module loading
+MyModuleRegistry.Register();
+
+// Now your modules are available in configuration
+await Host.CreateApplicationBuilder()
+          .UseConfiguredServiceProviderFactory()
+          .Build()
+          .RunAsync();
+```
+
+**Configuration:**
+```json
+{
+  "modules": [
+    {
+      "type": "my-custom-module",
+      "configuration": { }
+    }
+  ]
+}
+```
+
+---
+
 ## API Reference
+
+<details>
+<summary><strong>BaubitModuleAttribute</strong></summary>
+
+Marks a module class for compile-time discovery and registration.
+
+| Property | Description |
+|----------|-------------|
+| `Key` | Unique string key used in configuration to identify this module |
+
+**Usage:**
+```csharp
+[BaubitModule("mymodule")]
+public class MyModule : BaseModule<MyConfig> { }
+```
+
+**Requirements:**
+- Key must be unique across all modules in the compilation
+- Module must implement `IModule`
+- Module must have a constructor accepting `IConfiguration`
+
+</details>
+
+<details>
+<summary><strong>GeneratedModuleRegistryAttribute</strong></summary>
+
+Marks a partial class to receive generated module registry methods for consumer assemblies.
+
+**Usage:**
+```csharp
+[GeneratedModuleRegistry]
+internal static partial class MyModuleRegistry
+{
+    // Register() method generated automatically
+}
+
+// At application startup:
+MyModuleRegistry.Register();
+```
+
+**Purpose:**
+- Allows test projects to register test-specific modules
+- Enables consumer libraries to provide their own modules
+- Supports plugin architectures with distributed modules
+
+</details>
+
+<details>
+<summary><strong>ModuleRegistry</strong></summary>
+
+Registry for secure module instantiation based on compile-time discovered modules.
+
+| Method | Description |
+|--------|-------------|
+| `TryCreate(string key, IConfiguration, out IModule)` | Attempts to create a module from the specified key |
+| `RegisterExternal(Action<Dictionary<...>>)` | Registers modules from consumer assemblies |
+
+**Thread Safety:** All public members are thread-safe.
+
+**Security:** Only modules discovered at compile time with `[BaubitModule]` can be created.
+
+</details>
 
 <details>
 <summary><strong>IModule</strong></summary>
@@ -450,13 +597,13 @@ Interface for service provider factories that can be configured via host applica
 </details>
 
 <details>
-<summary><strong>AServiceProviderFactory&lt;TContainerBuilder&gt;</strong></summary>
+<summary><strong>BaseServiceProviderFactory&lt;TContainerBuilder&gt;</strong></summary>
 
 Abstract base class for service provider factories that integrate module-based dependency injection with custom container builders.
 
 | Constructor | Description |
 |-------------|-------------|
-| `AServiceProviderFactory(IServiceProviderFactory<TContainerBuilder>, IConfiguration, IComponent[])` | Create with internal factory, configuration, and components |
+| `BaseServiceProviderFactory(IServiceProviderFactory<TContainerBuilder>, IConfiguration, IComponent[])` | Create with internal factory, configuration, and components |
 
 | Property | Description |
 |----------|-------------|
@@ -506,12 +653,11 @@ Extension methods for module operations.
 
 | Key | Description |
 |-----|-------------|
-| `type` | Assembly-qualified module type name |
+| `type` | Module key (from `[BaubitModule]` attribute) |
 | `configuration` | Object containing direct configuration values |
 | `configurationSource` | Object specifying external configuration sources |
 | `modules` | Array of nested module definitions (inside `configuration`) |
 | `moduleSources` | Array of external configuration sources for modules |
-| `serviceProviderFactoryType` | Custom service provider factory type (optional) |
 
 ---
 ## Extensions

@@ -238,7 +238,7 @@ namespace Baubit.DI
     }
 
     /// <summary>
-    /// Generic builder class for creating strongly-typed <see cref="AModule{TConfiguration}"/> instances.
+    /// Generic builder class for creating strongly-typed <see cref="BaseModule{TConfiguration}"/> instances.
     /// </summary>
     /// <typeparam name="TModule">The type of module to build.</typeparam>
     /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
