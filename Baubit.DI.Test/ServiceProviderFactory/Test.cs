@@ -14,17 +14,16 @@ namespace Baubit.DI.Test.ServiceProviderFactory
     {
         [Theory]
         [InlineData("Baubit.DI.Test;ServiceProviderFactory.Setup.config.json")]
-        public void Constructor_WithValidConfig_FailsOnUnknownModuleKey(string configFile)
+        public void Constructor_WithValidConfig_LoadsModulesSuccessfully(string configFile)
         {
-            // Arrange & Act - Config references test-serviceprovider which isn't in secure registry
+            // Arrange & Act - Config references test-serviceprovider which IS in secure registry
             var result = Baubit.Configuration.ConfigurationBuilder.CreateNew()
                 .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
                 .Bind(cb => cb.Build())
                 .Bind(cfg => Result.Try(() => Host.CreateApplicationBuilder().UseConfiguredServiceProviderFactory(cfg).Build()));
 
-            // Assert - Should fail because test modules aren't in the secure ModuleRegistry
-            Assert.True(result.IsFailed);
-            Assert.Contains("Unknown module key", result.Errors[0].Message);
+            // Assert - Should succeed because test modules ARE registered via TestModuleRegistry
+            Assert.True(result.IsSuccess);
         }
 
         [Fact]
@@ -38,8 +37,8 @@ namespace Baubit.DI.Test.ServiceProviderFactory
             var services = new ServiceCollection();
             factory.Load(services);
 
-            // Assert
-            Assert.Single(services);
+            // Assert - With no modules, no services are added
+            Assert.Empty(services);
         }
 
         [Fact]

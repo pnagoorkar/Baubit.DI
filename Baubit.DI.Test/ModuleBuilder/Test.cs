@@ -160,22 +160,31 @@ namespace Baubit.DI.Test.ModuleBuilder
         [Fact]
         public void CreateMany_WithDirectlyDefinedModules_FailsOnUnknownModuleKey()
         {
-            // Arrange
+            // Arrange - Use a key that truly doesn't exist
             var configDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", "test-modulebuilder" },
+                { "modules:0:type", "truly-unknown-module-99999" },
                 { "modules:0:TestValue", "value1" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
                 .Build();
 
-            // Act
+            // Act - CreateMany calls CreateNew which now validates null/empty in Initialize
+            // But non-null unknown keys only fail when Build() is called
             var result = DI.ModuleBuilder.CreateMany(configuration);
 
-            // Assert - Should fail because test-modulebuilder isn't in secure registry
-            Assert.True(result.IsFailed);
-            Assert.Contains("Unknown module key", result.Errors[0].Message);
+            // Assert - Should fail because CreateNew.ThrowIfFailed() is called in CreateBuildersFromDirectModules
+            // which throws when Initialize fails (e.g., null type)
+            // For non-null unknown keys, CreateMany succeeds but Build() would fail
+            // This test should verify that builders are created, but they would fail on Build()
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value);
+            
+            // Verify that building the module fails
+            var buildResult = result.Value.First().Build();
+            Assert.True(buildResult.IsFailed);
+            Assert.Contains("Unknown module key", buildResult.Errors[0].Message);
         }
 
         [Fact]
@@ -204,7 +213,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         [Fact]
         public void CreateMany_WithInvalidModuleType_ReturnsFailedResult()
         {
-            // Arrange
+            // Arrange - Assembly-qualified names are treated as keys
             var configDict = new Dictionary<string, string?>
             {
                 { "modules:0:type", "Invalid.Type, Invalid.Assembly" }
@@ -213,11 +222,17 @@ namespace Baubit.DI.Test.ModuleBuilder
                 .AddInMemoryCollection(configDict)
                 .Build();
 
-            // Act
+            // Act - CreateMany creates builders successfully
             var result = DI.ModuleBuilder.CreateMany(configuration);
 
-            // Assert
-            Assert.True(result.IsFailed);
+            // Assert - Builder creation succeeds, but Build() would fail
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value);
+            
+            // Verify that building the module fails with unknown key
+            var buildResult = result.Value.First().Build();
+            Assert.True(buildResult.IsFailed);
+            Assert.Contains("Unknown module key", buildResult.Errors[0].Message);
         }
 
         [Fact]
@@ -313,7 +328,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         }
 
         [Fact]
-        public void Build_AfterDispose_ThrowsNullReferenceException()
+        public void Build_AfterDispose_ReturnsFailedResult()
         {
             // Arrange
             var configDict = new Dictionary<string, string?>
@@ -327,8 +342,12 @@ namespace Baubit.DI.Test.ModuleBuilder
             var moduleBuilder = DI.ModuleBuilder.CreateNew(configuration).Value;
             moduleBuilder.Build(); // First build disposes the builder
 
-            // Act & Assert
-            Assert.Throws<NullReferenceException>(() => moduleBuilder.Build());
+            // Act
+            var result = moduleBuilder.Build();
+            
+            // Assert - Should return failed result, not throw exception
+            Assert.True(result.IsFailed);
+            Assert.Contains("disposed", result.Errors[0].Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -583,11 +602,12 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg)).Value;
 
-            // Act
-            var result = moduleBuilder.WithNestedModulesFrom(invalidConfiguration);
-
-            // Assert
-            Assert.True(result.IsFailed);
+            // Act & Assert - WithNestedModulesFrom calls Build().ThrowIfFailed() internally
+            // which throws when module key is not found
+            var exception = Assert.Throws<Baubit.Traceability.Exceptions.FailedOperationException>(
+                () => moduleBuilder.WithNestedModulesFrom(invalidConfiguration));
+            
+            Assert.Contains("Unknown module key", exception.Message);
         }
 
         [Fact]
