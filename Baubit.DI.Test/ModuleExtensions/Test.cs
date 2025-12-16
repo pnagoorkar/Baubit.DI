@@ -24,6 +24,7 @@ namespace Baubit.DI.Test.ModuleExtensions
         /// <summary>
         /// Test module for unit tests.
         /// </summary>
+        [BaubitModule("test-module-ext")]
         public class TestModule : BaseModule<TestConfiguration>
         {
             public TestModule(TestConfiguration configuration, List<IModule>? nestedModules = null) 
@@ -242,9 +243,9 @@ namespace Baubit.DI.Test.ModuleExtensions
             using var doc = JsonDocument.Parse(serializeResult.Value);
             var root = doc.RootElement;
 
-            // Assert - Structure is correct
+            // Assert - Structure is correct with module key
             Assert.True(root.TryGetProperty("type", out var typeElement));
-            Assert.Contains(typeof(TestModule).FullName!, typeElement.GetString());
+            Assert.Equal("test-module-ext", typeElement.GetString());
             Assert.True(root.TryGetProperty("configuration", out var configElement));
             Assert.True(configElement.TryGetProperty("TestValue", out var testValueElement));
             Assert.Equal("roundtrip", testValueElement.GetString());
@@ -271,6 +272,57 @@ namespace Baubit.DI.Test.ModuleExtensions
             Assert.True(root.TryGetProperty("modules", out var modulesElement));
             Assert.Equal(JsonValueKind.Array, modulesElement.ValueKind);
             Assert.Single(modulesElement.EnumerateArray());
+        }
+
+        [Fact]
+        public void RoundTrip_SerializeThenDeserializeJson_ProducesValidStructure()
+        {
+            // Arrange - Create modules with nested modules
+            var nestedConfig = new TestConfiguration { TestValue = "nested-value", NumericValue = 42 };
+            var nestedModule = new TestModule(nestedConfig);
+            var parentConfig = new TestConfiguration { TestValue = "parent-value", NumericValue = 100 };
+            var parentModule = new TestModule(parentConfig, new List<IModule> { nestedModule });
+            var modules = new List<IModule> { parentModule };
+            var options = new JsonSerializerOptions { WriteIndented = true };
+
+            // Act - Serialize to JSON
+            var serializeResult = modules.SerializeAsJsonObject(options);
+            Assert.True(serializeResult.IsSuccess);
+            
+            var json = serializeResult.Value;
+            
+            // Parse JSON to verify structure is correct for loading
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            
+            // Assert - JSON structure is valid for module loading
+            Assert.True(root.TryGetProperty("modules", out var modulesArray));
+            Assert.Equal(JsonValueKind.Array, modulesArray.ValueKind);
+            Assert.Single(modulesArray.EnumerateArray());
+            
+            var parentModuleJson = modulesArray.EnumerateArray().First();
+            Assert.True(parentModuleJson.TryGetProperty("type", out var typeElement));
+            Assert.Equal("test-module-ext", typeElement.GetString());
+            
+            Assert.True(parentModuleJson.TryGetProperty("configuration", out var configElement));
+            Assert.True(configElement.TryGetProperty("TestValue", out var testValueElement));
+            Assert.Equal("parent-value", testValueElement.GetString());
+            Assert.True(configElement.TryGetProperty("NumericValue", out var numericValueElement));
+            Assert.Equal(100, numericValueElement.GetInt32());
+            
+            // Verify nested modules are in the structure
+            Assert.True(parentModuleJson.TryGetProperty("modules", out var nestedModulesArray));
+            Assert.Single(nestedModulesArray.EnumerateArray());
+            
+            var nestedModuleJson = nestedModulesArray.EnumerateArray().First();
+            Assert.True(nestedModuleJson.TryGetProperty("type", out var nestedTypeElement));
+            Assert.Equal("test-module-ext", nestedTypeElement.GetString());
+            
+            Assert.True(nestedModuleJson.TryGetProperty("configuration", out var nestedConfigElement));
+            Assert.True(nestedConfigElement.TryGetProperty("TestValue", out var nestedTestValueElement));
+            Assert.Equal("nested-value", nestedTestValueElement.GetString());
+            Assert.True(nestedConfigElement.TryGetProperty("NumericValue", out var nestedNumericValueElement));
+            Assert.Equal(42, nestedNumericValueElement.GetInt32());
         }
 
         #endregion

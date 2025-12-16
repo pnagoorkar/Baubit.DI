@@ -68,8 +68,9 @@ namespace Baubit.DI
             if (onFailure == null) onFailure = Exit;
             if (configuration != null) hostApplicationBuilder.Configuration.AddConfiguration(configuration);
 
-            var factoryTypeResolutionResult = serviceProviderFactoryType == null ? TypeResolver.TryResolveType(hostApplicationBuilder.Configuration[ServiceProviderFactoryTypeKey]) : Result.Ok(serviceProviderFactoryType);
-            var factoryType = factoryTypeResolutionResult.ValueOrDefault ?? typeof(ServiceProviderFactory);
+            // Use the provided factory type or default to ServiceProviderFactory
+            // Note: Custom factory types from configuration are no longer supported for security reasons
+            var factoryType = serviceProviderFactoryType ?? typeof(ServiceProviderFactory);
 
 
             var registrationResult = factoryType.CreateInstance<IServiceProviderFactory>(new Type[] { typeof(IConfiguration), typeof(IComponent[]) },
@@ -77,7 +78,7 @@ namespace Baubit.DI
 
             if (registrationResult.IsFailed)
             {
-                onFailure(hostApplicationBuilder, registrationResult.WithReasons(factoryTypeResolutionResult.Reasons));
+                onFailure(hostApplicationBuilder, registrationResult);
             }
 
             return hostApplicationBuilder;

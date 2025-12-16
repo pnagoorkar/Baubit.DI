@@ -10,25 +10,15 @@
 
 **Autofac Extension**: [Baubit.DI.Autofac](https://github.com/pnagoorkar/Baubit.DI.Autofac)
 
-Secure, modular dependency injection framework for .NET with compile-time validated, configuration-driven module composition.
-
-## 🔒 Security First
-
-Baubit.DI now uses **compile-time module discovery** to eliminate Remote Code Execution (RCE) vulnerabilities from configuration-driven type loading:
-
-- ✅ **Secure by default**: No reflection-based type loading from configuration
-- ✅ **Compile-time validation**: Modules are discovered and validated during build
-- ✅ **Type-safe**: Source generator creates strongly-typed module factories
-- ✅ **Zero runtime overhead**: Module instantiation uses pre-compiled delegates
+Modularity framework for .NET with configuration-driven module composition.
 
 ## Table of Contents
 
 - [Installation](#installation)
-- [Security Overview](#security-overview)
+- [Overview](#overview)
 - [Quick Start](#quick-start)
   - [1. Define a Configuration](#1-define-a-configuration)
   - [2. Create a Module](#2-create-a-module)
-  - [3. Register Your Module](#3-register-your-module)
 - [Application Creation Patterns](#application-creation-patterns)
   - [Pattern 1: Modules from appsettings.json](#pattern-1-modules-from-appsettingsjson)
   - [Pattern 2: Modules from Code (IComponent)](#pattern-2-modules-from-code-icomponent)
@@ -51,49 +41,15 @@ Baubit.DI now uses **compile-time module discovery** to eliminate Remote Code Ex
 dotnet add package Baubit.DI
 ```
 
-## Security Overview
+## Overview
 
-### Previous (Insecure) Approach
+Baubit.DI provides a modular approach to dependency injection where service registrations are encapsulated in modules. Modules can be:
 
-```json
-{
-  "modules": [
-    {
-      "type": "mymodule"  // ❌ Arbitrary type loading - RCE risk
-    }
-  ]
-}
-```
-
-### Current (Secure) Approach
-
-```csharp
-// 1. Annotate your module
-[BaubitModule("mymodule")]
-public class MyModule : BaseModule<MyModuleConfiguration>
-{
-    public MyModule(IConfiguration configuration) : base(configuration) { }
-    // ...
-}
-```
-
-```json
-{
-  "modules": [
-    {
-      "type": "mymodule"  // ✅ Secure key lookup - compile-time validated
-    }
-  ]
-}
-```
-
-The `[BaubitModule]` attribute marks modules for discovery during compilation. A source generator validates that:
-- Module implements `IModule`
-- Module has required `public ctor(IConfiguration)` constructor
-- Module key is unique across the compilation
-- Module is concrete (not abstract)
-
-Invalid modules produce **compile-time errors**, not runtime failures.
+- Composed hierarchically through nested modules
+- Loaded dynamically from configuration
+- Defined programmatically using `IComponent`
+- Combined using both approaches (hybrid loading)
+- Integrated with `IHostApplicationBuilder` via extension methods
 
 ## Quick Start
 
@@ -110,7 +66,7 @@ public class MyModuleConfiguration : BaseConfiguration
 ### 2. Create a Module
 
 ```csharp
-[BaubitModule("mymodule")]  // ⬅️ Register with unique key
+[BaubitModule("mymodule")]  // Required for configuration-based loading
 public class MyModule : BaseModule<MyModuleConfiguration>
 {
     // Constructor for loading from IConfiguration (appsettings.json)
@@ -124,38 +80,12 @@ public class MyModule : BaseModule<MyModuleConfiguration>
     public override void Load(IServiceCollection services)
     {
         services.AddSingleton<IMyService>(new MyService(Configuration.ConnectionString));
-        base.Load(services); // Always call base to load nested modules
+        base.Load(services);  // Load nested modules
     }
 }
 ```
 
-### 3. Register Your Module
-
-**In appsettings.json:**
-
-```json
-{
-  "modules": [
-    {
-      "type": "mymodule",
-      "configuration": {
-        "ConnectionString": "Server=localhost;Database=MyDb",
-        "Timeout": 60
-      }
-    }
-  ]
-}
-```
-
-**Or programmatically:**
-
-```csharp
-var module = new MyModule(new MyModuleConfiguration 
-{ 
-    ConnectionString = "...",
-    Timeout = 60
-});
-```
+**Note**: The `[BaubitModule("key")]` attribute registers your module for compile-time validated, secure configuration loading. The key is used in `appsettings.json` instead of assembly-qualified type names.
 
 ---
 
@@ -165,7 +95,7 @@ Baubit.DI supports three patterns for creating applications. Each pattern has it
 
 ### Pattern 1: Modules from appsettings.json
 
-Load ALL modules from configuration. Module types and configurations are defined in JSON.
+Load ALL modules from configuration. Module types, their configurations, and nested modules are defined in JSON.
 
 ```csharp
 // appsettings.json defines all modules
@@ -182,8 +112,7 @@ await Host.CreateApplicationBuilder()
     {
       "type": "mymodule",
       "configuration": {
-        "connectionString": "Server=localhost;Database=mydb",
-        "timeout": 30
+        "connectionString": "Server=localhost;Database=mydb"
       }
     }
   ]
