@@ -10,15 +10,25 @@
 
 **Autofac Extension**: [Baubit.DI.Autofac](https://github.com/pnagoorkar/Baubit.DI.Autofac)
 
-Modularity framework for .NET with configuration-driven module composition.
+Secure, modular dependency injection framework for .NET with compile-time validated, configuration-driven module composition.
+
+## 🔒 Security First
+
+Baubit.DI now uses **compile-time module discovery** to eliminate Remote Code Execution (RCE) vulnerabilities from configuration-driven type loading:
+
+- ✅ **Secure by default**: No reflection-based type loading from configuration
+- ✅ **Compile-time validation**: Modules are discovered and validated during build
+- ✅ **Type-safe**: Source generator creates strongly-typed module factories
+- ✅ **Zero runtime overhead**: Module instantiation uses pre-compiled delegates
 
 ## Table of Contents
 
 - [Installation](#installation)
-- [Overview](#overview)
+- [Security Overview](#security-overview)
 - [Quick Start](#quick-start)
   - [1. Define a Configuration](#1-define-a-configuration)
   - [2. Create a Module](#2-create-a-module)
+  - [3. Register Your Module](#3-register-your-module)
 - [Application Creation Patterns](#application-creation-patterns)
   - [Pattern 1: Modules from appsettings.json](#pattern-1-modules-from-appsettingsjson)
   - [Pattern 2: Modules from Code (IComponent)](#pattern-2-modules-from-code-icomponent)
@@ -41,22 +51,56 @@ Modularity framework for .NET with configuration-driven module composition.
 dotnet add package Baubit.DI
 ```
 
-## Overview
+## Security Overview
 
-Baubit.DI provides a modular approach to dependency injection where service registrations are encapsulated in modules. Modules can be:
+### Previous (Insecure) Approach
 
-- Composed hierarchically through nested modules
-- Loaded dynamically from configuration
-- Defined programmatically using `IComponent`
-- Combined using both approaches (hybrid loading)
-- Integrated with `IHostApplicationBuilder` via extension methods
+```json
+{
+  "modules": [
+    {
+      "type": "mymodule"  // ❌ Arbitrary type loading - RCE risk
+    }
+  ]
+}
+```
+
+### Current (Secure) Approach
+
+```csharp
+// 1. Annotate your module
+[BaubitModule("mymodule")]
+public class MyModule : BaseModule<MyModuleConfiguration>
+{
+    public MyModule(IConfiguration configuration) : base(configuration) { }
+    // ...
+}
+```
+
+```json
+{
+  "modules": [
+    {
+      "type": "mymodule"  // ✅ Secure key lookup - compile-time validated
+    }
+  ]
+}
+```
+
+The `[BaubitModule]` attribute marks modules for discovery during compilation. A source generator validates that:
+- Module implements `IModule`
+- Module has required `public ctor(IConfiguration)` constructor
+- Module key is unique across the compilation
+- Module is concrete (not abstract)
+
+Invalid modules produce **compile-time errors**, not runtime failures.
 
 ## Quick Start
 
 ### 1. Define a Configuration
 
 ```csharp
-public class MyModuleConfiguration : AConfiguration
+public class MyModuleConfiguration : BaseConfiguration
 {
     public string ConnectionString { get; set; }
     public int Timeout { get; set; } = 30;
@@ -66,7 +110,8 @@ public class MyModuleConfiguration : AConfiguration
 ### 2. Create a Module
 
 ```csharp
-public class MyModule : AModule<MyModuleConfiguration>
+[BaubitModule("mymodule")]  // ⬅️ Register with unique key
+public class MyModule : BaseModule<MyModuleConfiguration>
 {
     // Constructor for loading from IConfiguration (appsettings.json)
     public MyModule(IConfiguration configuration)
@@ -79,8 +124,37 @@ public class MyModule : AModule<MyModuleConfiguration>
     public override void Load(IServiceCollection services)
     {
         services.AddSingleton<IMyService>(new MyService(Configuration.ConnectionString));
+        base.Load(services); // Always call base to load nested modules
     }
 }
+```
+
+### 3. Register Your Module
+
+**In appsettings.json:**
+
+```json
+{
+  "modules": [
+    {
+      "type": "mymodule",
+      "configuration": {
+        "ConnectionString": "Server=localhost;Database=MyDb",
+        "Timeout": 60
+      }
+    }
+  ]
+}
+```
+
+**Or programmatically:**
+
+```csharp
+var module = new MyModule(new MyModuleConfiguration 
+{ 
+    ConnectionString = "...",
+    Timeout = 60
+});
 ```
 
 ---
@@ -91,7 +165,7 @@ Baubit.DI supports three patterns for creating applications. Each pattern has it
 
 ### Pattern 1: Modules from appsettings.json
 
-Load ALL modules from configuration. Module types, their configurations, and nested modules are defined in JSON.
+Load ALL modules from configuration. Module types and configurations are defined in JSON.
 
 ```csharp
 // appsettings.json defines all modules
@@ -106,9 +180,10 @@ await Host.CreateApplicationBuilder()
 {
   "modules": [
     {
-      "type": "MyNamespace.MyModule, MyAssembly",
+      "type": "mymodule",
       "configuration": {
-        "connectionString": "Server=localhost;Database=mydb"
+        "connectionString": "Server=localhost;Database=mydb",
+        "timeout": 30
       }
     }
   ]
@@ -128,7 +203,7 @@ Load ALL modules programmatically using `IComponent`. No configuration file need
 
 ```csharp
 // Define a component that builds modules in code
-public class MyComponent : AComponent
+public class MyComponent : BaseComponent
 {
     protected override Result<ComponentBuilder> Build(ComponentBuilder builder)
     {
@@ -190,13 +265,13 @@ Configuration values are enclosed in a `configuration` section:
 {
   "modules": [
     {
-      "type": "MyNamespace.MyModule, MyAssembly",
+      "type": "mymodule",
       "configuration": {
         "connectionString": "Server=localhost;Database=mydb",
         "timeout": 60,
         "modules": [
           {
-            "type": "MyNamespace.NestedModule, MyAssembly",
+            "type": "nested-module",
             "configuration": { }
           }
         ]
@@ -214,7 +289,7 @@ Configuration is loaded from external sources via `configurationSource`:
 {
   "modules": [    
     {
-      "type": "MyNamespace.MyModule, MyAssembly",
+      "type": "mymodule",
       "configurationSource": {
         "jsonUriStrings": ["file://path/to/config.json"]
       }
@@ -230,7 +305,7 @@ Configuration is loaded from external sources via `configurationSource`:
   "timeout": 60,
   "modules": [    
     {
-      "type": "MyNamespace.NestedModule, MyAssembly",
+      "type": "nested-module",
       "configuration": {
         "somePropKey": "some_prop_value"
       }
@@ -247,7 +322,7 @@ Combine direct values with external sources:
 {
   "modules": [
     {
-      "type": "MyNamespace.MyModule, MyAssembly",
+      "type": "mymodule",
       "configuration": {
         "connectionString": "Server=localhost;Database=mydb"
       },
@@ -265,7 +340,7 @@ Combine direct values with external sources:
   "timeout": 60,
   "modules": [
     {
-      "type": "MyNamespace.NestedModule, MyAssembly",
+      "type": "nested-module",
       "configuration": { }
     }
   ]
@@ -284,15 +359,15 @@ The module system supports recursive loading - modules can contain nested module
 {
   "modules": [
     {
-      "type": "MyNamespace.RootModule, MyAssembly",
+      "type": "root-module",
       "configuration": {
         "modules": [
           {
-            "type": "MyNamespace.FeatureModule, MyAssembly",
+            "type": "feature-module",
             "configuration": {
               "modules": [
                 {
-                  "type": "MyNamespace.SubFeatureModule, MyAssembly",
+                  "type": "subfeature-module",
                   "configuration": { }
                 }
               ]
@@ -355,14 +430,14 @@ Interface for dependency injection modules.
 </details>
 
 <details>
-<summary><strong>AModule / AModule&lt;TConfiguration&gt;</strong></summary>
+<summary><strong>BaseModule / BaseModule&lt;TConfiguration&gt;</strong></summary>
 
 Abstract base classes for modules.
 
 | Constructor | Description |
 |-------------|-------------|
-| `AModule(TConfiguration, List<IModule>)` | Create with config and nested modules |
-| `AModule(IConfiguration)` | Create from IConfiguration section |
+| `BaseModule(TConfiguration, List<IModule>)` | Create with config and nested modules |
+| `BaseModule(IConfiguration)` | Create from IConfiguration section |
 
 | Virtual Method | Description |
 |----------------|-------------|
@@ -373,7 +448,7 @@ Abstract base classes for modules.
 </details>
 
 <details>
-<summary><strong>IComponent / AComponent</strong></summary>
+<summary><strong>IComponent / BaseComponent</strong></summary>
 
 Interface and base class for grouping related modules.
 
