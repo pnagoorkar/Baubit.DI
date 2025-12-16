@@ -317,15 +317,6 @@ The module system supports recursive loading - modules can contain nested module
 Baubit.DI uses `ServiceProviderFactory` by default, which works with the standard .NET `IServiceCollection`. You can provide custom factory implementations for integration with third-party DI containers.
 See [Baubit.DI.Autofac](https://github.com/pnagoorkar/Baubit.DI.Autofac) for reference.
 
-### Via Configuration
-
-```json
-{
-  "serviceProviderFactoryType": "MyNamespace.CustomServiceProviderFactory, MyAssembly",
-  "modules": [ ]
-}
-```
-
 ### Via Generic Type Parameter
 
 ```csharp
@@ -338,7 +329,7 @@ await Host.CreateApplicationBuilder()
 **Custom factory requirements:**
 - Must implement `IServiceProviderFactory` or `IServiceProviderFactory<TContainerBuilder>`
 - Must have a constructor accepting `(IConfiguration configuration, IComponent[] components)`
-- Must derive from `AServiceProviderFactory<TContainerBuilder>` for container integration
+- Must derive from `BaseServiceProviderFactory<TContainerBuilder>` for container integration
 
 ---
 

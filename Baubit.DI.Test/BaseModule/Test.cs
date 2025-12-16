@@ -46,9 +46,14 @@ namespace Baubit.DI.Test.BaseModule
         /// <summary>
         /// Test module that uses the default null parameter for nestedModules.
         /// </summary>
+        [BaubitModule("test-basemodule-null")]
         public class TestModuleWithNullDefault : BaseModule<TestConfiguration>
         {
             public TestModuleWithNullDefault(TestConfiguration configuration) : base(configuration)
+            {
+            }
+
+            public TestModuleWithNullDefault(IConfiguration configuration) : base(configuration)
             {
             }
 
@@ -57,11 +62,17 @@ namespace Baubit.DI.Test.BaseModule
             }
         }
 
+        [BaubitModule("test-basemodule-deps")]
         public class TestModuleWithDependencies : BaseModule<TestConfiguration>
         {
             private readonly TestModule _dependency;
 
             public TestModuleWithDependencies(TestConfiguration configuration, List<IModule> nestedModules) : base(configuration, nestedModules)
+            {
+                _dependency = new TestModule(new TestConfiguration(), new List<IModule>());
+            }
+
+            public TestModuleWithDependencies(IConfiguration configuration) : base(configuration)
             {
                 _dependency = new TestModule(new TestConfiguration(), new List<IModule>());
             }

@@ -12,6 +12,8 @@
     
     <!-- Disable assembly signing for generator project -->
     <SignAssembly>false</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile></AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>

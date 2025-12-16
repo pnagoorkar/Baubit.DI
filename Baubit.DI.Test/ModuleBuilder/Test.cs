@@ -54,11 +54,17 @@ namespace Baubit.DI.Test.ModuleBuilder
         /// <summary>
         /// Test module that provides known dependencies.
         /// </summary>
+        [BaubitModule("test-modulebuilder-deps")]
         public class TestModuleWithDependencies : BaseModule<TestConfiguration>
         {
             private readonly TestModule _dependency;
 
             public TestModuleWithDependencies(TestConfiguration configuration, List<IModule> nestedModules) : base(configuration, nestedModules)
+            {
+                _dependency = new TestModule(new TestConfiguration(), new List<IModule>());
+            }
+
+            public TestModuleWithDependencies(IConfiguration configuration) : base(configuration)
             {
                 _dependency = new TestModule(new TestConfiguration(), new List<IModule>());
             }
@@ -79,7 +85,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", typeof(TestModule).AssemblyQualifiedName },
+                { "type", "test-modulebuilder" },
                 { "TestValue", "test123" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -156,7 +162,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:0:type", "test-modulebuilder" },
                 { "modules:0:TestValue", "value1" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -177,7 +183,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:0:type", "test-modulebuilder" },
                 { "modules:0:TestValue", "value1" },
                 { "modules:1:type", "test-modulebuilder" },
                 { "modules:1:TestValue", "value2" }
@@ -287,7 +293,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", typeof(TestModule).AssemblyQualifiedName },
+                { "type", "test-modulebuilder" },
                 { "TestValue", "testValue" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -311,7 +317,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", typeof(TestModule).AssemblyQualifiedName }
+                { "type", "test-modulebuilder" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
@@ -328,15 +334,8 @@ namespace Baubit.DI.Test.ModuleBuilder
         public void Build_CallsOnInitialized()
         {
             // Arrange
-            var configDict = new Dictionary<string, string?>
-            {
-                { "type", typeof(TestModule).AssemblyQualifiedName }
-            };
-            var configuration = new MsConfigurationBuilder()
-                .AddInMemoryCollection(configDict)
-                .Build();
-
-            var moduleBuilder = DI.ModuleBuilder.CreateNew(configuration).Value;
+            var config = new TestConfiguration { TestValue = "test" };
+            var moduleBuilder = new DI.ModuleBuilder(() => new TestModule(config));
 
             // Act
             var result = moduleBuilder.Build();
@@ -398,7 +397,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", typeof(TestModule).AssemblyQualifiedName }
+                { "type", "test-modulebuilder" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
@@ -417,7 +416,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", typeof(TestModule).AssemblyQualifiedName }
+                { "type", "test-modulebuilder" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
@@ -500,7 +499,7 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var nestedConfigDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:0:type", "test-modulebuilder" },
                 { "modules:0:TestValue", "nested" }
             };
             var nestedConfiguration = new MsConfigurationBuilder()
@@ -526,12 +525,12 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var nestedConfigDict1 = new Dictionary<string, string?>
             {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:0:type", "test-modulebuilder" },
                 { "modules:0:TestValue", "nested1" }
             };
             var nestedConfigDict2 = new Dictionary<string, string?>
             {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:0:type", "test-modulebuilder" },
                 { "modules:0:TestValue", "nested2" }
             };
             var config1 = new MsConfigurationBuilder().AddInMemoryCollection(nestedConfigDict1).Build();
@@ -603,7 +602,7 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var validConfigDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:0:type", "test-modulebuilder" },
                 { "modules:0:TestValue", "valid" }
             };
             var invalidConfigDict = new Dictionary<string, string?>
