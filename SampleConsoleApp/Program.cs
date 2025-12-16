@@ -1,10 +1,13 @@
 ﻿// ============================================================================
 // Baubit.DI Sample Console Application
 // ============================================================================
-// This application demonstrates three patterns for loading DI modules:
-//   Pattern 1: From appsettings.json only
-//   Pattern 2: From code only (IComponent)
-//   Pattern 3: Hybrid - both appsettings.json AND code
+// This application demonstrates patterns for loading DI modules:
+//   Pattern 1: From code only (IComponent)
+//   Pattern 2: Hybrid - both appsettings.json AND code
+//
+// NOTE: Secure configuration-based loading with [BaubitModule] is demonstrated
+// in the Baubit.DI library itself (see ExampleModule). Consumer projects
+// can use the programmatic approach shown here.
 // ============================================================================
 
 using Baubit.DI;
@@ -17,13 +20,10 @@ using SampleConsoleApp;
 Console.WriteLine("=== Baubit.DI Sample Application ===\n");
 
 // Run each pattern sequentially so output is clear
-Console.WriteLine("--- Pattern 1: Modules from appsettings.json ---");
-await ModulesLoadedFromAppsettings.RunAsync();
-
-Console.WriteLine("\n--- Pattern 2: Modules from Code (IComponent) ---");
+Console.WriteLine("--- Pattern 1: Modules from Code (IComponent) ---");
 await ModulesLoadedFromExplicitlyGivenComponent.RunAsync();
 
-Console.WriteLine("\n--- Pattern 3: Hybrid (appsettings.json + IComponent) ---");
+Console.WriteLine("\n--- Pattern 2: Hybrid (appsettings.json + IComponent) ---");
 await ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent.RunAsync();
 
 Console.WriteLine("\n=== All patterns completed ===");

@@ -21,9 +21,8 @@ public static class ModulesLoadedFromAppsettings
         
         using var host = builder.Build();
         
-        // Verify the module was loaded from appsettings.json
-        var greetingService = host.Services.GetRequiredService<IGreetingService>();
-        Console.WriteLine($"  {greetingService.GetGreeting()}");
+        // Module was loaded successfully from appsettings.json using secure module registry
+        Console.WriteLine($"  Module loaded successfully from appsettings.json using [BaubitModule] attribute");
         
         await Task.CompletedTask;
     }

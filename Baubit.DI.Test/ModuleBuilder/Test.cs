@@ -24,6 +24,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         /// <summary>
         /// Test module for unit tests.
         /// </summary>
+        [BaubitModule("test-modulebuilder")]
         public class TestModule : BaseModule<TestConfiguration>
         {
             public bool LoadCalled { get; private set; }
@@ -178,7 +179,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             {
                 { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
                 { "modules:0:TestValue", "value1" },
-                { "modules:1:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:1:type", "test-modulebuilder" },
                 { "modules:1:TestValue", "value2" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -217,7 +218,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         {
             // Arrange - Create a JSON file for indirect module loading
             var tempFile = Path.GetTempFileName();
-            var moduleType = typeof(TestModule).AssemblyQualifiedName;
+            var moduleType = "test-modulebuilder";
             File.WriteAllText(tempFile, $"{{ \"type\": \"{moduleType}\", \"TestValue\": \"fromSource\" }}");
 
             try
@@ -248,7 +249,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         {
             // Arrange - Create a JSON file for indirect module loading
             var tempFile = Path.GetTempFileName();
-            var moduleType = typeof(TestModule).AssemblyQualifiedName;
+            var moduleType = "test-modulebuilder";
             File.WriteAllText(tempFile, $"{{ \"type\": \"{moduleType}\", \"TestValue\": \"fromSource\" }}");
 
             try

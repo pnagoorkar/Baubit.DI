@@ -16,6 +16,7 @@ namespace Baubit.DI.Test.BaseModule
             public string? TestValue { get; set; }
         }
 
+        [BaubitModule("test-basemodule")]
         public class TestModule : BaseModule<TestConfiguration>
         {
             public bool LoadCalled { get; private set; }
@@ -97,7 +98,7 @@ namespace Baubit.DI.Test.BaseModule
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", typeof(TestModule).AssemblyQualifiedName },
+                { "type", "test-basemodule" },
                 { "TestValue", "testValue" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -255,7 +256,7 @@ namespace Baubit.DI.Test.BaseModule
             var configDict = new Dictionary<string, string?>
             {
                 { "TestValue", "parent" },
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
+                { "modules:0:type", "test-basemodule" },
                 { "modules:0:TestValue", "nested1" }
             };
             var configuration = new MsConfigurationBuilder()

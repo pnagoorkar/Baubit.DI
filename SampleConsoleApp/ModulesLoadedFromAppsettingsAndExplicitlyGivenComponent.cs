@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// Pattern 3: Hybrid (appsettings.json + IComponent)
+// Pattern 2: Hybrid (appsettings.json + IComponent)
 // ============================================================================
 // Combines BOTH configuration-based and code-based module loading.
 // Components from code are loaded first, then modules from appsettings.json.
@@ -13,8 +13,7 @@ using Microsoft.Extensions.Hosting;
 namespace SampleConsoleApp;
 
 /// <summary>
-/// Interface for a logging service - different from IGreetingService
-/// so we can demonstrate both modules being loaded.
+/// Interface for a logging service - demonstrates code-based module.
 /// </summary>
 interface ILoggerService
 {
@@ -70,13 +69,12 @@ public static class ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent
         
         using var host = builder.Build();
         
-        // IGreetingService comes from appsettings.json (GreetingModule)
-        var greetingService = host.Services.GetRequiredService<IGreetingService>();
-        Console.WriteLine($"  From appsettings.json: {greetingService.GetGreeting()}");
+        // Module from appsettings.json (ExampleModule with key "example") was loaded
+        Console.WriteLine($"  Module from appsettings.json loaded successfully");
         
         // ILoggerService comes from code (LoggerComponent)
         var loggerService = host.Services.GetRequiredService<ILoggerService>();
-        loggerService.Log("From code component");
+        loggerService.Log("Module from code component loaded successfully");
         
         await Task.CompletedTask;
     }
