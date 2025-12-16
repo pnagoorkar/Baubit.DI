@@ -1,5 +1,5 @@
 ﻿// ============================================================================
-// Pattern 2: Hybrid (appsettings.json + IComponent)
+// Pattern 3: Hybrid (appsettings.json + IComponent)
 // ============================================================================
 // Combines BOTH configuration-based and code-based module loading.
 // Components from code are loaded first, then modules from appsettings.json.
@@ -62,15 +62,20 @@ public static class ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent
     public static async Task RunAsync()
     {
         // Build host with modules from BOTH appsettings.json AND code
-        var builder = Host.CreateApplicationBuilder();
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            Args = Array.Empty<string>(),
+            ContentRootPath = AppContext.BaseDirectory
+        });
         builder.UseConfiguredServiceProviderFactory(
             componentsFactory: () => [new LoggerComponent()]
         );
         
         using var host = builder.Build();
         
-        // Module from appsettings.json (ExampleModule with key "example") was loaded
-        Console.WriteLine($"  Module from appsettings.json loaded successfully");
+        // IGreetingService comes from appsettings.json (GreetingModule with key "greeting")
+        var greetingService = host.Services.GetRequiredService<IGreetingService>();
+        Console.WriteLine($"  From config: {greetingService.GetGreeting()}");
         
         // ILoggerService comes from code (LoggerComponent)
         var loggerService = host.Services.GetRequiredService<ILoggerService>();

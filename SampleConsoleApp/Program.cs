@@ -1,11 +1,11 @@
 ﻿// ============================================================================
 // Baubit.DI Sample Console Application
 // ============================================================================
-// This application demonstrates patterns for loading DI modules:
-//   Pattern 1: From code only (IComponent)
-//   Pattern 2: Hybrid - both appsettings.json AND code
+// This application demonstrates three patterns for loading DI modules:
+//   Pattern 1: From appsettings.json only (secure module registry)
+//   Pattern 2: From code only (IComponent)
+//   Pattern 3: Hybrid - both appsettings.json AND code
 //
-// NOTE: This sample shows both programmatic and configuration-based approaches.
 // The GreetingModule uses [BaubitModule("greeting")] to enable secure loading
 // from configuration files.
 // ============================================================================
@@ -17,13 +17,24 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SampleConsoleApp;
 
+// Register modules from this assembly with the secure module registry
+// Note: Ideally SampleModuleRegistry.Register() would be called here once the generator works
+// For now, we manually register the GreetingModule
+ModuleRegistry.RegisterExternal(dict =>
+{
+    dict["greeting"] = cfg => new GreetingModule(cfg);
+});
+
 Console.WriteLine("=== Baubit.DI Sample Application ===\n");
 
 // Run each pattern sequentially so output is clear
-Console.WriteLine("--- Pattern 1: Modules from Code (IComponent) ---");
+Console.WriteLine("--- Pattern 1: Modules from appsettings.json ---");
+await ModulesLoadedFromAppsettings.RunAsync();
+
+Console.WriteLine("\n--- Pattern 2: Modules from Code (IComponent) ---");
 await ModulesLoadedFromExplicitlyGivenComponent.RunAsync();
 
-Console.WriteLine("\n--- Pattern 2: Hybrid (appsettings.json + IComponent) ---");
+Console.WriteLine("\n--- Pattern 3: Hybrid (appsettings.json + IComponent) ---");
 await ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent.RunAsync();
 
 Console.WriteLine("\n=== All patterns completed ===");
@@ -35,7 +46,7 @@ Console.WriteLine("\n=== All patterns completed ===");
 /// <summary>
 /// Interface for the greeting service - allows verification of which module registered it.
 /// </summary>
-interface IGreetingService
+public interface IGreetingService
 {
     string GetGreeting();
 }
@@ -43,7 +54,7 @@ interface IGreetingService
 /// <summary>
 /// A simple greeting service that returns a configured message.
 /// </summary>
-class GreetingService : IGreetingService
+public class GreetingService : IGreetingService
 {
     private readonly string _message;
 
@@ -64,7 +75,7 @@ class GreetingService : IGreetingService
 /// - When loaded from appsettings.json, properties are bound automatically
 /// - When created in code, properties are set directly
 /// </summary>
-class GreetingModuleConfiguration : BaseConfiguration
+public class GreetingModuleConfiguration : BaseConfiguration
 {
     public string Message { get; set; } = "Default greeting";
 }
@@ -83,7 +94,7 @@ class GreetingModuleConfiguration : BaseConfiguration
 /// Configuration example: { "type": "greeting", "configuration": { "Message": "Hello!" } }
 /// </summary>
 [BaubitModule("greeting")]
-class GreetingModule : BaseModule<GreetingModuleConfiguration>
+public class GreetingModule : BaseModule<GreetingModuleConfiguration>
 {
     // Constructor for loading from appsettings.json
     public GreetingModule(IConfiguration configuration) : base(configuration) { }
@@ -106,7 +117,7 @@ class GreetingModule : BaseModule<GreetingModuleConfiguration>
 /// <summary>
 /// A component that creates GreetingModule in code with a custom message.
 /// </summary>
-class CodeGreetingComponent : BaseComponent
+public class CodeGreetingComponent : BaseComponent
 {
     private readonly string _message;
 
