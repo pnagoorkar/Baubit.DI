@@ -55,13 +55,24 @@ Baubit.DI provides a modular approach to dependency injection where service regi
 
 ## Security
 
-Baubit.DI uses compile-time module discovery to eliminate remote code execution (RCE) vulnerabilities from configuration-driven module loading. Modules must be annotated with `[BaubitModule]` and discovered at compile time. Configuration can only select from these pre-registered modules using keys, not assembly-qualified type names.
+Baubit.DI uses compile-time module discovery to eliminate remote code execution (RCE) vulnerabilities from configuration-driven module loading. Modules must be annotated with `[BaubitModule]` and discovered at compile time. Configuration can only select from these pre-registered modules using simple string keys instead of assembly-qualified type names.
 
 **Key security features:**
 - No reflection-based type loading from configuration
 - Compile-time validation of module definitions
 - Configuration uses simple string keys, not type names
 - Consumer assemblies can register their own modules using `[GeneratedModuleRegistry]`
+
+**Breaking change from previous versions:**
+```json
+// ❌ Old (insecure): Assembly-qualified type name
+{ "type": "MyNamespace.MyModule, MyAssembly" }
+
+// ✅ New (secure): Simple module key
+{ "type": "mymodule" }
+```
+
+To migrate existing code, add `[BaubitModule("key")]` to your modules and update configuration to use the key instead of the assembly-qualified type name.
 
 ## Quick Start
 
@@ -642,8 +653,10 @@ Extension methods for module operations.
 |--------|-------------|
 | `TryFlatten<TModule>(TModule)` | Flatten a module and its nested modules into a flat list |
 | `TryFlatten<TModule>(TModule, List<IModule>)` | Flatten a module into an existing list |
-| `Serialize(JsonSerializerOptions)` | Serialize a module to JSON string |
-| `SerializeAsJsonObject(JsonSerializerOptions)` | Serialize modules collection to JSON object |
+| `Serialize(JsonSerializerOptions)` | Serialize a module to JSON string (uses module key from [BaubitModule]) |
+| `SerializeAsJsonObject(JsonSerializerOptions)` | Serialize modules collection to JSON object (uses module keys) |
+
+**Note:** Serialization methods use the module key from `[BaubitModule]` attribute instead of assembly-qualified type names for security.
 
 </details>
 
