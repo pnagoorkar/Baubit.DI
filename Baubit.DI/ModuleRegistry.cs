@@ -26,10 +26,38 @@ namespace Baubit.DI
             {
                 var factories = new Dictionary<string, Func<IConfiguration, IModule>>(StringComparer.OrdinalIgnoreCase);
                 InitializeFactories(factories);
+                // Allow external registries to register their modules
+                foreach (var registration in ExternalRegistrations)
+                {
+                    registration(factories);
+                }
                 return factories;
             });
 
         private static IReadOnlyDictionary<string, Func<IConfiguration, IModule>> Factories => _factoriesLazy.Value;
+
+        private static readonly List<Action<Dictionary<string, Func<IConfiguration, IModule>>>> ExternalRegistrations
+            = new List<Action<Dictionary<string, Func<IConfiguration, IModule>>>>();
+
+        /// <summary>
+        /// Registers an external module registry to contribute modules to the global registry.
+        /// </summary>
+        /// <param name="registration">Action that adds module factories to the registry.</param>
+        /// <remarks>
+        /// This method allows consumer assemblies with <see cref="GeneratedModuleRegistryAttribute"/>
+        /// to register their modules with the main ModuleRegistry. Must be called before any
+        /// module resolution occurs (typically during application startup).
+        /// </remarks>
+        public static void RegisterExternal(Action<Dictionary<string, Func<IConfiguration, IModule>>> registration)
+        {
+            if (_factoriesLazy.IsValueCreated)
+            {
+                throw new InvalidOperationException(
+                    "External registrations must be added before any module resolution occurs. " +
+                    "Call RegisterExternal during application startup before using ModuleRegistry.TryCreate.");
+            }
+            ExternalRegistrations.Add(registration);
+        }
 
         /// <summary>
         /// Attempts to create a module instance from the specified key and configuration.
