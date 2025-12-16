@@ -30,7 +30,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             public bool LoadCalled { get; private set; }
             public bool OnInitializedCalled { get; private set; }
 
-            public TestModule(TestConfiguration configuration, List<IModule> nestedModules) : base(configuration, nestedModules)
+            public TestModule(TestConfiguration configuration, List<IModule> nestedModules = null) : base(configuration, nestedModules)
             {
             }
 
@@ -442,7 +442,7 @@ namespace Baubit.DI.Test.ModuleBuilder
                 .Value;
 
             // Act
-            var result = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder);
+            var result = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg));
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -458,7 +458,7 @@ namespace Baubit.DI.Test.ModuleBuilder
                 .Value;
 
             var nestedModule = new TestModule(new TestConfiguration(), new List<IModule>());
-            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
+            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg)).Value;
 
             // Act
             var result = moduleBuilder.WithNestedModules(nestedModule);
@@ -475,7 +475,7 @@ namespace Baubit.DI.Test.ModuleBuilder
                 .CreateNew()
                 .Value;
 
-            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
+            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg)).Value;
 
             // Act
             var result = moduleBuilder.Build();
@@ -503,7 +503,7 @@ namespace Baubit.DI.Test.ModuleBuilder
                 .AddInMemoryCollection(nestedConfigDict)
                 .Build();
 
-            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
+            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg)).Value;
 
             // Act
             var result = moduleBuilder.WithNestedModulesFrom(nestedConfiguration);
@@ -533,7 +533,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             var config1 = new MsConfigurationBuilder().AddInMemoryCollection(nestedConfigDict1).Build();
             var config2 = new MsConfigurationBuilder().AddInMemoryCollection(nestedConfigDict2).Build();
 
-            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
+            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg)).Value;
 
             // Act
             var result = moduleBuilder.WithNestedModulesFrom(config1, config2);
@@ -555,7 +555,7 @@ namespace Baubit.DI.Test.ModuleBuilder
                 .AddInMemoryCollection(emptyConfigDict)
                 .Build();
 
-            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
+            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg)).Value;
 
             // Act
             var result = moduleBuilder.WithNestedModulesFrom(emptyConfiguration);
@@ -580,7 +580,7 @@ namespace Baubit.DI.Test.ModuleBuilder
                 .AddInMemoryCollection(invalidConfigDict)
                 .Build();
 
-            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
+            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg)).Value;
 
             // Act
             var result = moduleBuilder.WithNestedModulesFrom(invalidConfiguration);
@@ -609,7 +609,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             var validConfig = new MsConfigurationBuilder().AddInMemoryCollection(validConfigDict).Build();
             var invalidConfig = new MsConfigurationBuilder().AddInMemoryCollection(invalidConfigDict).Build();
 
-            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder).Value;
+            var moduleBuilder = DI.ModuleBuilder<TestModule, TestConfiguration>.CreateNew(configBuilder, cfg => new TestModule(cfg)).Value;
 
             // Act - Pass valid first, then invalid to exercise the loop
             var result = moduleBuilder.WithNestedModulesFrom(validConfig, invalidConfig);

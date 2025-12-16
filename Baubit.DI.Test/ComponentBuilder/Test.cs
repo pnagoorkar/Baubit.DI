@@ -31,7 +31,7 @@ namespace Baubit.DI.Test.ComponentBuilder
 
             // Act
             var result = DI.ComponentBuilder.CreateNew()
-                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>(configBuilder))
+                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>(configBuilder, cfg => new TestModule(cfg)))
                 .Bind(cb => cb.Build());
 
             // Assert
@@ -44,7 +44,7 @@ namespace Baubit.DI.Test.ComponentBuilder
         {
             // Act
             var result = DI.ComponentBuilder.CreateNew()
-                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<ConfigurationBuilder<TestConfiguration>>)(builder => { })))
+                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<ConfigurationBuilder<TestConfiguration>>)(builder => { }), cfg => new TestModule(cfg)))
                 .Bind(cb => cb.Build());
 
             // Assert
@@ -57,7 +57,7 @@ namespace Baubit.DI.Test.ComponentBuilder
         {
             // Act
             var result = DI.ComponentBuilder.CreateNew()
-                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "override_value")))
+                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "override_value"), cfg => new TestModule(cfg)))
                 .Bind(cb => cb.Build());
 
             // Assert
@@ -72,8 +72,8 @@ namespace Baubit.DI.Test.ComponentBuilder
         {
             // Arrange & Act
             var result = DI.ComponentBuilder.CreateNew()
-                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test1")))
-                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test2")))
+                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test1"), cfg => new TestModule(cfg)))
+                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test2"), cfg => new TestModule(cfg)))
                 .Bind(cb => cb.Build());
 
             // Assert
@@ -114,7 +114,7 @@ namespace Baubit.DI.Test.ComponentBuilder
 
             // Act
             var result = DI.ComponentBuilder.CreateNew()
-                .WithModule<TestModule, TestConfiguration>(configBuilder)
+                .WithModule<TestModule, TestConfiguration>(configBuilder, cfg => new TestModule(cfg))
                 .Build();
 
             // Assert
@@ -127,7 +127,7 @@ namespace Baubit.DI.Test.ComponentBuilder
         {
             // Act
             var result = DI.ComponentBuilder.CreateNew()
-                .WithModule<TestModule, TestConfiguration>((Action<ConfigurationBuilder<TestConfiguration>>)(builder => { }))
+                .WithModule<TestModule, TestConfiguration>((Action<ConfigurationBuilder<TestConfiguration>>)(builder => { }), cfg => new TestModule(cfg))
                 .Build();
 
             // Assert
@@ -140,7 +140,7 @@ namespace Baubit.DI.Test.ComponentBuilder
         {
             // Act
             var result = DI.ComponentBuilder.CreateNew()
-                .WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test"))
+                .WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test"), cfg => new TestModule(cfg))
                 .Build();
 
             // Assert
@@ -272,7 +272,7 @@ namespace Baubit.DI.Test.ComponentBuilder
         {
             // Arrange
             var result = DI.ComponentBuilder.CreateNew()
-                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test")))
+                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test"), cfg => new TestModule(cfg)))
                 .Build();
 
             Assert.True(result.IsSuccess);
@@ -296,7 +296,7 @@ namespace Baubit.DI.Test.ComponentBuilder
         {
             // Arrange
             var result = DI.ComponentBuilder.CreateNew()
-                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test")))
+                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test"), cfg => new TestModule(cfg)))
                 .Build();
 
             Assert.True(result.IsSuccess);
@@ -314,7 +314,7 @@ namespace Baubit.DI.Test.ComponentBuilder
         {
             // Arrange
             var result = DI.ComponentBuilder.CreateNew()
-                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test")))
+                .Bind(cb => cb.WithModule<TestModule, TestConfiguration>((Action<TestConfiguration>)(cfg => cfg.Value = "test"), cfg => new TestModule(cfg)))
                 .Build();
 
             Assert.True(result.IsSuccess);

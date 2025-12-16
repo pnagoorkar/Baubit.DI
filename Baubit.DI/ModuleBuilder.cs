@@ -1,6 +1,5 @@
 ﻿using Baubit.Configuration;
 using Baubit.DI.Traceability;
-using Baubit.Reflection;
 using Baubit.Traceability;
 using FluentResults;
 using Microsoft.Extensions.Configuration;
@@ -34,10 +33,7 @@ namespace Baubit.DI
         /// </summary>
         public const string ModuleSourcesSectionKey = "moduleSources";
 
-        /// <summary>
-        /// The type of module to be built.
-        /// </summary>
-        protected Type moduleType;
+        protected string moduleTypeValue;
 
         /// <summary>
         /// The configuration builder used to construct the module configuration.
@@ -72,10 +68,10 @@ namespace Baubit.DI
         /// </summary>
         private Result<ModuleBuilder> Initialize(IConfiguration configuration)
         {
-            return ResolveModuleType(configuration)
-                .Bind(() => WithAdditionalConfigurationSourcesFrom<ModuleBuilder>(configuration))
-                .Bind(_ => WithAdditionalConfigurationsFrom<ModuleBuilder>(configuration))
-                .Bind(_ => Result.Ok(this));
+            return Result.Try(() => moduleTypeValue = configuration[ModuleTypeKey])
+                         .Bind(_ => WithAdditionalConfigurationSourcesFrom<ModuleBuilder>(configuration))
+                         .Bind(_ => WithAdditionalConfigurationsFrom<ModuleBuilder>(configuration))
+                         .Bind(_ => Result.Ok(this));
         }
 
         /// <summary>
@@ -114,13 +110,6 @@ namespace Baubit.DI
                 .Bind(CreateNew);
         }
 
-        private Result ResolveModuleType(IConfiguration configuration)
-        {
-            return TypeResolver.TryResolveType(configuration[ModuleTypeKey])
-                .Bind(type => Result.Try(() => moduleType = type))
-                .Bind(_ => Result.FailIf(moduleType == null, "Module type could not be resolved"));
-        }
-
         /// <summary>
         /// Adds additional configuration sources from the specified configurations.
         /// </summary>
@@ -153,37 +142,29 @@ namespace Baubit.DI
         {
             try
             {
-                return configurationBuilder.Build()
-                    .Bind(config =>
-                    {
-                        // Load module from secure registry only
-                        var typeKey = config[ModuleTypeKey];
-                        if (string.IsNullOrWhiteSpace(typeKey))
-                        {
-                            return Result.Fail<IModule>("Module type key is required but was not specified in configuration.");
-                        }
-
-                        if (ModuleRegistry.TryCreate(typeKey, config, out var module))
-                        {
-                            return Result.Ok(module);
-                        }
-
-                        return Result.Fail<IModule>($"Unknown module key '{typeKey}'. Ensure the module is annotated with [BaubitModule(\"{typeKey}\")] attribute.");
-                    });
+                return FailIfDisposed().Bind(() => configurationBuilder.Build()
+                                       .Bind(config =>
+                                       {
+                                           // Load module from secure registry only
+                                           var typeKey = config[ModuleTypeKey];
+                                           if (string.IsNullOrWhiteSpace(typeKey))
+                                           {
+                                               return Result.Fail<IModule>("Module type key is required but was not specified in configuration.");
+                                           }
+                                       
+                                           if (ModuleRegistry.TryCreate(typeKey, config, out var module))
+                                           {
+                                               return Result.Ok(module);
+                                           }
+                                       
+                                           return Result.Fail<IModule>($"Unknown module key '{typeKey}'. Ensure the module is annotated with [BaubitModule(\"{typeKey}\")] attribute.");
+                                       }));
             }
             finally
             {
                 // Always dispose to prevent reuse
                 Dispose();
             }
-        }
-
-        /// <summary>
-        /// Builds a module of the specified type using the given constructor parameters.
-        /// </summary>
-        protected Result<TModule> BuildModule<TModule>(Type[] paramTypes, object[] paramValues) where TModule : IModule
-        {
-            return FailIfDisposed().Bind(() => moduleType.CreateInstance<TModule>(paramTypes, paramValues));
         }
 
         private Result FailIfDisposed()
@@ -236,7 +217,6 @@ namespace Baubit.DI
             {
                 if (disposing)
                 {
-                    moduleType = null;
                     configurationBuilder?.Dispose();
                     configurationBuilder = null;
                 }
@@ -265,39 +245,29 @@ namespace Baubit.DI
         where TModule : BaseModule<TConfiguration> 
         where TConfiguration : BaseConfiguration
     {
+        private Func<TConfiguration, TModule> moduleFactory = null;
         private readonly List<IModule> nestedModules = new List<IModule>();
         private readonly List<Action<TConfiguration>> overrideHandlers = new List<Action<TConfiguration>>();
 
-        private ModuleBuilder(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder) : base(configurationBuilder)
+        private ModuleBuilder(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) : base(configurationBuilder)
         {
-            moduleType = typeof(TModule);
+            this.moduleFactory = moduleFactory;
         }
 
-        /// <summary>
-        /// Creates a new <see cref="ModuleBuilder{TModule, TConfiguration}"/> with the specified configuration builder.
-        /// </summary>
-        public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder)
+
+        public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, 
+                                                                               Func<TConfiguration, TModule> moduleFactory)
         {
-            return Result.Try(() => new ModuleBuilder<TModule, TConfiguration>(configurationBuilder));
+            return Result.Try(() => new ModuleBuilder<TModule, TConfiguration>(configurationBuilder, moduleFactory));
         }
 
-        /// <summary>
-        /// Adds configuration override handlers that will be invoked after the configuration is built.
-        /// </summary>
-        /// <param name="overrideHandlers">One or more handlers that modify the configuration.</param>
-        /// <returns>A result containing this builder for method chaining.</returns>
-        /// <remarks>
-        /// Override handlers are invoked in the order they are added, allowing you to modify
-        /// the configuration after it has been built from configuration sources.
-        /// </remarks>
+
         public Result<ModuleBuilder<TModule, TConfiguration>> WithOverrideHandlers(params Action<TConfiguration>[] overrideHandlers)
         {
             return Result.Try(() => this.overrideHandlers.AddRange(overrideHandlers)).Bind(() => Result.Ok(this));
         }
 
-        /// <summary>
-        /// Adds nested modules to the module being built.
-        /// </summary>
+
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModules(params IModule[] modules)
         {
             return Result.Try(() => 
@@ -307,9 +277,7 @@ namespace Baubit.DI
             });
         }
 
-        /// <summary>
-        /// Adds nested modules loaded from the specified configuration.
-        /// </summary>
+
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModulesFrom(IConfiguration configuration)
         {
             return CreateMany(configuration)
@@ -317,9 +285,7 @@ namespace Baubit.DI
                 .Bind(modules => WithNestedModules(modules.ToArray()));
         }
 
-        /// <summary>
-        /// Adds nested modules loaded from multiple configurations.
-        /// </summary>
+
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModulesFrom(params IConfiguration[] configurations)
         {
             return Result.Try(() =>
@@ -332,21 +298,14 @@ namespace Baubit.DI
             });
         }
 
-        /// <summary>
-        /// Builds the strongly-typed module instance.
-        /// </summary>
-        /// <remarks>
-        /// This method disposes the builder after building. The builder cannot be reused after calling this method.
-        /// </remarks>
+
         public new Result<TModule> Build()
         {
             try
             {
                 return ((ConfigurationBuilder<TConfiguration>)configurationBuilder).Build()
                                                                                    .Bind(CallOverrideHandlers)
-                                                                                   .Bind(config => BuildModule<TModule>(
-                                                                                       new[] { typeof(TConfiguration), typeof(List<IModule>) }, 
-                                                                                       new object[] { config, nestedModules }));
+                                                                                   .Bind(config => Result.Try(() => moduleFactory?.Invoke(config)));
             }
             finally
             {

@@ -120,7 +120,7 @@ class CodeGreetingComponent : BaseComponent
         return componentBuilder.WithModule<GreetingModule, GreetingModuleConfiguration>(config =>
         {
             config.Message = _message;
-        });
+        }, cfg => new GreetingModule(cfg));
     }
 }
 

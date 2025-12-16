@@ -7,14 +7,6 @@ using System.Linq;
 
 namespace Baubit.DI
 {
-    /// <summary>
-    /// Builder class for creating components that contain collections of modules.
-    /// </summary>
-    /// <remarks>
-    /// Use <see cref="CreateNew"/> to create a new builder instance, then add modules using the
-    /// <see cref="WithModule{TModule, TConfiguration}(ConfigurationBuilder{TConfiguration})"/> methods.
-    /// Call <see cref="Build"/> to create the final component.
-    /// </remarks>
     public sealed class ComponentBuilder : IDisposable
     {
         private List<IModule> modules = new List<IModule>();
@@ -36,81 +28,53 @@ namespace Baubit.DI
 
 
 
-        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(ConfigurationBuilder<TConfiguration> configurationBuilder, params Action<TConfiguration>[] overrideHandlers) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory, params Action<TConfiguration>[] overrideHandlers) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
         {
-            return ModuleBuilder<TModule, TConfiguration>.CreateNew(configurationBuilder)
+            return ModuleBuilder<TModule, TConfiguration>.CreateNew(configurationBuilder, moduleFactory)
                                                          .Bind(mb => mb.WithOverrideHandlers(overrideHandlers))
                                                          .Bind(mb => mb.Build())
                                                          .Bind(module => Result.Try(() => modules.Add(module)))
                                                          .Bind(() => Result.Ok(this));
         }
 
-        /// <summary>
-        /// Adds a module to the component using the specified configuration builder.
-        /// </summary>
-        /// <typeparam name="TModule">The type of module to add.</typeparam>
-        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-        /// <param name="configurationBuilder">The configuration builder for the module.</param>
-        /// <returns>A result containing this builder for method chaining.</returns>
-        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(ConfigurationBuilder<TConfiguration> configurationBuilder) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+
+        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
         {
-            return WithModule<TModule, TConfiguration>(configurationBuilder, overrideHandlers: Array.Empty<Action<TConfiguration>>());
+            return WithModule<TModule, TConfiguration>(configurationBuilder, moduleFactory, overrideHandlers: Array.Empty<Action<TConfiguration>>());
         }
 
-        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator, params Action<TConfiguration>[] overrideHandlers) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator, Func<TConfiguration, TModule> moduleFactory, params Action<TConfiguration>[] overrideHandlers) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
         {
             return ConfigurationBuilder<TConfiguration>.CreateNew()
                                                        .Bind(cb => Result.Try(() => cbConfigurator(cb))
-                                                                         .Bind(() => WithModule<TModule, TConfiguration>(cb, overrideHandlers)));
+                                                                         .Bind(() => WithModule<TModule, TConfiguration>(cb, moduleFactory, overrideHandlers)));
         }
 
-        /// <summary>
-        /// Adds a module to the component using a configuration build handler.
-        /// </summary>
-        /// <typeparam name="TModule">The type of module to add.</typeparam>
-        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-        /// <param name="cbConfigurator">A handler that configures the configuration builder.</param>
-        /// <returns>A result containing this builder for method chaining.</returns>
-        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+
+        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
         {
-            return WithModule<TModule, TConfiguration>(cbConfigurator, overrideHandlers: Array.Empty<Action<TConfiguration>>());
+            return WithModule<TModule, TConfiguration>(cbConfigurator, moduleFactory, overrideHandlers: Array.Empty<Action<TConfiguration>>());
         }
 
-        /// <summary>
-        /// Adds a module to the component using a configuration override handler.
-        /// </summary>
-        /// <typeparam name="TModule">The type of module to add.</typeparam>
-        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-        /// <param name="configConfigurator">A handler that configures the module configuration.</param>
-        /// <returns>A result containing this builder for method chaining.</returns>
-        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<TConfiguration> configConfigurator) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+
+        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<TConfiguration> configConfigurator, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
         {
-            return WithModule<TModule, TConfiguration>(_ => { }, configConfigurator);
+            return WithModule<TModule, TConfiguration>(_ => { }, moduleFactory, configConfigurator);
         }
 
-        /// <summary>
-        /// Adds modules from existing components to this builder.
-        /// </summary>
-        /// <param name="components">The components whose modules should be added.</param>
-        /// <returns>A result containing this builder for method chaining.</returns>
+
         public Result<ComponentBuilder> WithModulesFrom(params IComponent[] components)
         {
             return Result.Try(() => modules.AddRange(components.SelectMany(component => component))).Bind(() => Result.Ok(this));
         }
 
-        /// <summary>
-        /// Builds the component containing all added modules.
-        /// </summary>
-        /// <returns>A result containing the built component.</returns>
+
         public Result<IComponent> Build()
         {
             return Result.Ok<IComponent>(new ModuleCollection(modules));
         }
 
-        /// <summary>
-        /// Releases the resources used by this builder.
-        /// </summary>
-        /// <param name="disposing">True if called from Dispose(); false if called from a finalizer.</param>
+
         private void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -173,61 +137,30 @@ namespace Baubit.DI
     /// </summary>
     public static class ComponentBuilderExtensions
     {
-        /// <summary>
-        /// Adds a module to the component using the specified configuration builder.
-        /// </summary>
-        /// <typeparam name="TModule">The type of module to add.</typeparam>
-        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-        /// <param name="result">The result containing the component builder.</param>
-        /// <param name="configurationBuilder">The configuration builder for the module.</param>
-        /// <returns>A result containing the builder for method chaining.</returns>
-        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, ConfigurationBuilder<TConfiguration> configurationBuilder) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+
+        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
         {
-            return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuilder));
+            return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuilder, moduleFactory));
         }
 
-        /// <summary>
-        /// Adds a module to the component using a configuration build handler.
-        /// </summary>
-        /// <typeparam name="TModule">The type of module to add.</typeparam>
-        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-        /// <param name="result">The result containing the component builder.</param>
-        /// <param name="configurationBuildHandler">A handler that configures the configuration builder.</param>
-        /// <returns>A result containing the builder for method chaining.</returns>
-        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<ConfigurationBuilder<TConfiguration>> configurationBuildHandler) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+
+        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<ConfigurationBuilder<TConfiguration>> configurationBuildHandler, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
         {
-            return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuildHandler));
+            return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuildHandler, moduleFactory));
         }
 
-        /// <summary>
-        /// Adds a module to the component using a configuration override handler.
-        /// </summary>
-        /// <typeparam name="TModule">The type of module to add.</typeparam>
-        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-        /// <param name="result">The result containing the component builder.</param>
-        /// <param name="configurationBuildHandler">A handler that configures the module configuration.</param>
-        /// <returns>A result containing the builder for method chaining.</returns>
-        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<TConfiguration> configurationBuildHandler) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+
+        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<TConfiguration> configurationBuildHandler, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
         {
-            return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuildHandler));
+            return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuildHandler, moduleFactory));
         }
 
-        /// <summary>
-        /// Builds the component from the builder wrapped in a result.
-        /// </summary>
-        /// <param name="result">The result containing the component builder.</param>
-        /// <returns>A result containing the built component.</returns>
         public static Result<IComponent> Build(this Result<ComponentBuilder> result)
         {
             return result.Bind(cb => cb.Build());
         }
 
-        /// <summary>
-        /// Adds modules from existing components to the builder.
-        /// </summary>
-        /// <param name="result">The result containing the component builder.</param>
-        /// <param name="featureFactories">The components whose modules should be added.</param>
-        /// <returns>A result containing the builder for method chaining.</returns>
+
         public static Result<ComponentBuilder> WithModulesFrom(this Result<ComponentBuilder> result, params IComponent[] featureFactories)
         {
             return result.Bind(cb => cb.WithModulesFrom(featureFactories));

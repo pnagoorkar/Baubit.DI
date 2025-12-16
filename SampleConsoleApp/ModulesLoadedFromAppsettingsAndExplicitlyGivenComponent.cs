@@ -53,7 +53,7 @@ class LoggerComponent : BaseComponent
         return builder.WithModule<LoggerModule, LoggerModuleConfiguration>(config =>
         {
             config.Prefix = "HYBRID";
-        });
+        }, cfg => new LoggerModule(cfg));
     }
 }
 
