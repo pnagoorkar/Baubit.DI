@@ -13,8 +13,7 @@ using Microsoft.Extensions.Hosting;
 namespace SampleConsoleApp;
 
 /// <summary>
-/// Interface for a logging service - different from IGreetingService
-/// so we can demonstrate both modules being loaded.
+/// Interface for a logging service - demonstrates code-based module.
 /// </summary>
 interface ILoggerService
 {
@@ -30,12 +29,12 @@ class LoggerService : ILoggerService
     public void Log(string message) => Console.WriteLine($"  [{_prefix}] {message}");
 }
 
-class LoggerModuleConfiguration : AConfiguration
+class LoggerModuleConfiguration : Configuration
 {
     public string Prefix { get; set; } = "LOG";
 }
 
-class LoggerModule : AModule<LoggerModuleConfiguration>
+class LoggerModule : Module<LoggerModuleConfiguration>
 {
     public LoggerModule(LoggerModuleConfiguration config, List<IModule>? nestedModules = null)
         : base(config, nestedModules) { }
@@ -47,14 +46,14 @@ class LoggerModule : AModule<LoggerModuleConfiguration>
     }
 }
 
-class LoggerComponent : AComponent
+class LoggerComponent : Component
 {
     protected override FluentResults.Result<ComponentBuilder> Build(ComponentBuilder builder)
     {
         return builder.WithModule<LoggerModule, LoggerModuleConfiguration>(config =>
         {
             config.Prefix = "HYBRID";
-        });
+        }, cfg => new LoggerModule(cfg));
     }
 }
 
@@ -63,20 +62,24 @@ public static class ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent
     public static async Task RunAsync()
     {
         // Build host with modules from BOTH appsettings.json AND code
-        var builder = Host.CreateApplicationBuilder();
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            Args = Array.Empty<string>(),
+            ContentRootPath = AppContext.BaseDirectory
+        });
         builder.UseConfiguredServiceProviderFactory(
             componentsFactory: () => [new LoggerComponent()]
         );
         
         using var host = builder.Build();
         
-        // IGreetingService comes from appsettings.json (GreetingModule)
+        // IGreetingService comes from appsettings.json (GreetingModule with key "greeting")
         var greetingService = host.Services.GetRequiredService<IGreetingService>();
-        Console.WriteLine($"  From appsettings.json: {greetingService.GetGreeting()}");
+        Console.WriteLine($"  From config: {greetingService.GetGreeting()}");
         
         // ILoggerService comes from code (LoggerComponent)
         var loggerService = host.Services.GetRequiredService<ILoggerService>();
-        loggerService.Log("From code component");
+        loggerService.Log("Module from code component loaded successfully");
         
         await Task.CompletedTask;
     }
