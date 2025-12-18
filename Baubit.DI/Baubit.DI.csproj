@@ -15,7 +15,6 @@
     <Authors>Prashant Nagoorkar</Authors>
     <SignAssembly>$(SignAssembly)</SignAssembly>
     <AssemblyOriginatorKeyFile>$(KeyFilePath)</AssemblyOriginatorKeyFile>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <Description>Modularity framework for .NET with configuration-driven module composition. Load modules from JSON, code, or both.</Description>
     <PackageTags>dependency-injection;di;modules;configuration;ioc;inversion-of-control;service-collection;hosting;netstandard;baubit</PackageTags>
   </PropertyGroup>
@@ -26,15 +25,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Baubit.Configuration" Version="2025.49.1" />
+    <PackageReference Include="Baubit.Configuration" Version="2025.51.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Build-time generator usage -->
     <ProjectReference Include="../Baubit.DI.Generators/Baubit.DI.Generators.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
+
+    <!-- Ship generator inside Baubit.DI nupkg -->
+    <None Include="../Baubit.DI.Generators/bin/$(Configuration)/netstandard2.0/Baubit.DI.Generators.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
   </ItemGroup>
 
 </Project>
