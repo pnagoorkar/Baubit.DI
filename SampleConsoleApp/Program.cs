@@ -75,7 +75,7 @@ public class GreetingService : IGreetingService
 /// - When loaded from appsettings.json, properties are bound automatically
 /// - When created in code, properties are set directly
 /// </summary>
-public class GreetingModuleConfiguration : BaseConfiguration
+public class GreetingModuleConfiguration : Configuration
 {
     public string Message { get; set; } = "Default greeting";
 }
@@ -94,7 +94,7 @@ public class GreetingModuleConfiguration : BaseConfiguration
 /// Configuration example: { "type": "greeting", "configuration": { "Message": "Hello!" } }
 /// </summary>
 [BaubitModule("greeting")]
-public class GreetingModule : BaseModule<GreetingModuleConfiguration>
+public class GreetingModule : Module<GreetingModuleConfiguration>
 {
     // Constructor for loading from appsettings.json
     public GreetingModule(IConfiguration configuration) : base(configuration) { }
@@ -117,7 +117,7 @@ public class GreetingModule : BaseModule<GreetingModuleConfiguration>
 /// <summary>
 /// A component that creates GreetingModule in code with a custom message.
 /// </summary>
-public class CodeGreetingComponent : BaseComponent
+public class CodeGreetingComponent : Component
 {
     private readonly string _message;
 

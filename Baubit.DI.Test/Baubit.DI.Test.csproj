@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="BaseModule\Setup\config.json" />
+    <None Remove="Module\Setup\config.json" />
     <None Remove="ServiceProviderFactory\Setup\config.json" />
     <None Remove="HostBuilderExtensions\Setup\config.json" />
     <None Remove="HostBuilderExtensions\Setup\invalidFactoryType.json" />
@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="BaseModule\Setup\config.json" />
+    <EmbeddedResource Include="Module\Setup\config.json" />
     <EmbeddedResource Include="ServiceProviderFactory\Setup\config.json" />
     <EmbeddedResource Include="HostBuilderExtensions\Setup\config.json" />
     <EmbeddedResource Include="HostBuilderExtensions\Setup\invalidFactoryType.json" />

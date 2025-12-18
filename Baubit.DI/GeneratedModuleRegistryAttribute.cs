@@ -26,7 +26,7 @@ namespace Baubit.DI
     ///     }
     /// 
     ///     [BaubitModule("my-module")]
-    ///     public class MyModule : BaseModule&lt;MyConfig&gt;
+    ///     public class MyModule : Module&lt;MyConfig&gt;
     ///     {
     ///         public MyModule(IConfiguration config) : base(config) { }
     ///     }

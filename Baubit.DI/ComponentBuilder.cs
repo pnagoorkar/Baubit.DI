@@ -35,7 +35,7 @@ namespace Baubit.DI
 
 
 
-        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory, params Action<TConfiguration>[] overrideHandlers) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory, params Action<TConfiguration>[] overrideHandlers) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return ModuleBuilder<TModule, TConfiguration>.CreateNew(configurationBuilder, moduleFactory)
                                                          .Bind(mb => mb.WithOverrideHandlers(overrideHandlers))
@@ -52,12 +52,12 @@ namespace Baubit.DI
         /// <param name="configurationBuilder">The configuration builder to use.</param>
         /// <param name="moduleFactory">Factory function to create the module from configuration.</param>
         /// <returns>A result containing this builder instance for chaining, or failure information.</returns>
-        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return WithModule<TModule, TConfiguration>(configurationBuilder, moduleFactory, overrideHandlers: Array.Empty<Action<TConfiguration>>());
         }
 
-        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator, Func<TConfiguration, TModule> moduleFactory, params Action<TConfiguration>[] overrideHandlers) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        private Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator, Func<TConfiguration, TModule> moduleFactory, params Action<TConfiguration>[] overrideHandlers) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return ConfigurationBuilder<TConfiguration>.CreateNew()
                                                        .Bind(cb => Result.Try(() => cbConfigurator(cb))
@@ -72,7 +72,7 @@ namespace Baubit.DI
         /// <param name="cbConfigurator">Action to configure the configuration builder.</param>
         /// <param name="moduleFactory">Factory function to create the module from configuration.</param>
         /// <returns>A result containing this builder instance for chaining, or failure information.</returns>
-        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<ConfigurationBuilder<TConfiguration>> cbConfigurator, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return WithModule<TModule, TConfiguration>(cbConfigurator, moduleFactory, overrideHandlers: Array.Empty<Action<TConfiguration>>());
         }
@@ -85,7 +85,7 @@ namespace Baubit.DI
         /// <param name="configConfigurator">Action to configure the module configuration.</param>
         /// <param name="moduleFactory">Factory function to create the module from configuration.</param>
         /// <returns>A result containing this builder instance for chaining, or failure information.</returns>
-        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<TConfiguration> configConfigurator, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        public Result<ComponentBuilder> WithModule<TModule, TConfiguration>(Action<TConfiguration> configConfigurator, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return WithModule<TModule, TConfiguration>(_ => { }, moduleFactory, configConfigurator);
         }
@@ -173,19 +173,19 @@ namespace Baubit.DI
     public static class ComponentBuilderExtensions
     {
 
-        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuilder, moduleFactory));
         }
 
 
-        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<ConfigurationBuilder<TConfiguration>> configurationBuildHandler, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<ConfigurationBuilder<TConfiguration>> configurationBuildHandler, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuildHandler, moduleFactory));
         }
 
 
-        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<TConfiguration> configurationBuildHandler, Func<TConfiguration, TModule> moduleFactory) where TModule : BaseModule<TConfiguration> where TConfiguration : BaseConfiguration
+        public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<TConfiguration> configurationBuildHandler, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuildHandler, moduleFactory));
         }

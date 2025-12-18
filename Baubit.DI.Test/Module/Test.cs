@@ -3,22 +3,22 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MsConfigurationBuilder = Microsoft.Extensions.Configuration.ConfigurationBuilder;
 
-namespace Baubit.DI.Test.BaseModule
+namespace Baubit.DI.Test.Module
 {
     /// <summary>
-    /// Unit tests for <see cref="DI.BaseModule"/> and <see cref="DI.BaseModule{TConfiguration}"/>
+    /// Unit tests for <see cref="DI.Module"/> and <see cref="DI.Module{TConfiguration}"/>
     /// </summary>
     public class Test
     {
         #region Test Types
 
-        public class TestConfiguration : BaseConfiguration
+        public class TestConfiguration : Configuration
         {
             public string? TestValue { get; set; }
         }
 
         [BaubitModule("test-basemodule")]
-        public class TestModule : BaseModule<TestConfiguration>
+        public class TestModule : Module<TestConfiguration>
         {
             public bool LoadCalled { get; private set; }
             public bool OnInitializedCalled { get; private set; }
@@ -48,7 +48,7 @@ namespace Baubit.DI.Test.BaseModule
         /// Test module that uses the default null parameter for nestedModules.
         /// </summary>
         [BaubitModule("test-basemodule-null")]
-        public class TestModuleWithNullDefault : BaseModule<TestConfiguration>
+        public class TestModuleWithNullDefault : Module<TestConfiguration>
         {
             public TestModuleWithNullDefault(TestConfiguration configuration) : base(configuration)
             {
@@ -64,7 +64,7 @@ namespace Baubit.DI.Test.BaseModule
         }
 
         [BaubitModule("test-basemodule-deps")]
-        public class TestModuleWithDependencies : BaseModule<TestConfiguration>
+        public class TestModuleWithDependencies : Module<TestConfiguration>
         {
             private readonly TestModule _dependency;
 
@@ -78,7 +78,7 @@ namespace Baubit.DI.Test.BaseModule
                 _dependency = new TestModule(new TestConfiguration(), new List<IModule>());
             }
 
-            protected override IEnumerable<Baubit.DI.BaseModule> GetKnownDependencies()
+            protected override IEnumerable<Baubit.DI.Module> GetKnownDependencies()
             {
                 return new[] { _dependency };
             }
@@ -86,7 +86,7 @@ namespace Baubit.DI.Test.BaseModule
 
         #endregion
 
-        #region BaseModule Constructor Tests
+        #region Module Constructor Tests
 
         [Fact]
         public void Constructor_WithConfigurationAndNestedModules_SetsProperties()
@@ -172,7 +172,7 @@ namespace Baubit.DI.Test.BaseModule
 
         #endregion
 
-        #region BaseModule Configuration Property Tests
+        #region Module Configuration Property Tests
 
         [Fact]
         public void Configuration_ReturnsStronglyTypedConfiguration()
@@ -191,7 +191,7 @@ namespace Baubit.DI.Test.BaseModule
 
         #endregion
 
-        #region BaseModule Load Tests
+        #region Module Load Tests
 
         [Fact]
         public void Load_WhenOverridden_IsCalled()
@@ -227,7 +227,7 @@ namespace Baubit.DI.Test.BaseModule
         /// <summary>
         /// Helper module that tracks load order
         /// </summary>
-        private class TrackingModule : BaseModule<TestConfiguration>
+        private class TrackingModule : Module<TestConfiguration>
         {
             private readonly string _name;
             private readonly List<string> _loadOrder;
@@ -248,7 +248,7 @@ namespace Baubit.DI.Test.BaseModule
 
         #endregion
 
-        #region BaseModule NestedModules Tests
+        #region Module NestedModules Tests
 
         [Fact]
         public void NestedModules_IsReadOnly()
@@ -262,7 +262,7 @@ namespace Baubit.DI.Test.BaseModule
         }
 
         [Theory]
-        [InlineData("Baubit.DI.Test;BaseModule.Setup.config.json")]
+        [InlineData("Baubit.DI.Test;Module.Setup.config.json")]
         public void NestedModules_WithNestedModulesInConfiguration_LoadsFromConfiguration(string configFile)
         {
             // Act

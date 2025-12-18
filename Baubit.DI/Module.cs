@@ -13,15 +13,15 @@ namespace Baubit.DI
     /// </summary>
     /// <remarks>
     /// Modules encapsulate service registrations and can be composed hierarchically.
-    /// Derive from this class or <see cref="BaseModule{TConfiguration}"/> to create custom modules.
+    /// Derive from this class or <see cref="Module{TConfiguration}"/> to create custom modules.
     /// </remarks>
-    public abstract class BaseModule : IModule
+    public abstract class Module : IModule
     {
         /// <summary>
         /// Gets or sets the configuration associated with this module.
         /// </summary>
         [JsonIgnore]
-        public BaseConfiguration Configuration { get; protected set; }
+        public Configuration Configuration { get; protected set; }
 
         /// <summary>
         /// Gets the collection of nested modules that this module depends on.
@@ -30,11 +30,11 @@ namespace Baubit.DI
         public IReadOnlyList<IModule> NestedModules { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BaseModule"/> class.
+        /// Initializes a new instance of the <see cref="Module"/> class.
         /// </summary>
         /// <param name="configuration">The configuration for this module.</param>
         /// <param name="nestedModules">The list of nested modules this module depends on.</param>
-        public BaseModule(BaseConfiguration configuration, List<IModule> nestedModules)
+        public Module(Configuration configuration, List<IModule> nestedModules)
         {
             Configuration = configuration;
             NestedModules = nestedModules.Concat(GetKnownDependencies()).ToList().AsReadOnly();
@@ -42,7 +42,7 @@ namespace Baubit.DI
         }
 
         /// <summary>
-        /// Called by the constructor in <see cref="BaseModule"/> after all construction activities.
+        /// Called by the constructor in <see cref="Module"/> after all construction activities.
         /// Override this method to perform construction in child types.
         /// </summary>
         protected virtual void OnInitialized()
@@ -54,7 +54,7 @@ namespace Baubit.DI
         /// Override to provide known module dependencies that should be added to <see cref="NestedModules"/>.
         /// </summary>
         /// <returns>An enumerable of modules that this module depends on.</returns>
-        protected virtual IEnumerable<BaseModule> GetKnownDependencies() => Enumerable.Empty<BaseModule>();
+        protected virtual IEnumerable<Module> GetKnownDependencies() => Enumerable.Empty<Module>();
 
 
 
@@ -79,7 +79,7 @@ namespace Baubit.DI
     /// Abstract base class for dependency injection modules with strongly-typed configuration.
     /// </summary>
     /// <typeparam name="TConfiguration">The type of configuration for this module.</typeparam>
-    public abstract class BaseModule<TConfiguration> : BaseModule where TConfiguration : BaseConfiguration
+    public abstract class Module<TConfiguration> : Module where TConfiguration : Configuration
     {
         /// <summary>
         /// Gets the strongly-typed configuration associated with this module.
@@ -91,20 +91,20 @@ namespace Baubit.DI
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BaseModule{TConfiguration}"/> class.
+        /// Initializes a new instance of the <see cref="Module{TConfiguration}"/> class.
         /// </summary>
         /// <param name="configuration">The strongly-typed configuration for this module.</param>
         /// <param name="nestedModules">Optional list of nested modules this module depends on.</param>
-        protected BaseModule(TConfiguration configuration, List<IModule> nestedModules = null) : base(configuration, nestedModules ?? new List<IModule>())
+        protected Module(TConfiguration configuration, List<IModule> nestedModules = null) : base(configuration, nestedModules ?? new List<IModule>())
         {
 
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BaseModule{TConfiguration}"/> class from an <see cref="IConfiguration"/> section.
+        /// Initializes a new instance of the <see cref="Module{TConfiguration}"/> class from an <see cref="IConfiguration"/> section.
         /// </summary>
         /// <param name="configuration">The configuration section to bind settings from.</param>
-        protected BaseModule(IConfiguration configuration) : this(configuration.Get<TConfiguration>(), LoadNestedModules(configuration))
+        protected Module(IConfiguration configuration) : this(configuration.Get<TConfiguration>(), LoadNestedModules(configuration))
         {
 
         }

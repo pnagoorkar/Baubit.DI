@@ -15,7 +15,7 @@ namespace Baubit.DI.Test.ModuleExtensions
         /// <summary>
         /// Test configuration for unit tests.
         /// </summary>
-        public class TestConfiguration : BaseConfiguration
+        public class TestConfiguration : Configuration
         {
             public string? TestValue { get; set; }
             public int NumericValue { get; set; }
@@ -25,7 +25,7 @@ namespace Baubit.DI.Test.ModuleExtensions
         /// Test module for unit tests.
         /// </summary>
         [BaubitModule("test-module-ext")]
-        public class TestModule : BaseModule<TestConfiguration>
+        public class TestModule : Module<TestConfiguration>
         {
             public TestModule(TestConfiguration configuration, List<IModule>? nestedModules = null) 
                 : base(configuration, nestedModules)

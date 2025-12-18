@@ -8,7 +8,7 @@ namespace Baubit.DI.Test.ComponentBuilder.Setup
     /// Test module class for ComponentBuilder tests.
     /// </summary>
     [BaubitModule("test-componentbuilder")]
-    public class TestModule : BaseModule<TestConfiguration>
+    public class TestModule : Module<TestConfiguration>
     {
         public TestModule(TestConfiguration configuration, List<IModule>? nestedModules = null)
             : base(configuration, nestedModules) { }

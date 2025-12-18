@@ -7,7 +7,7 @@ namespace Baubit.DI.Test.HostBuilderExtensions.Setup
     /// Test module for HostBuilderExtensions tests.
     /// </summary>
     [BaubitModule("test-hostbuilder")]
-    public class TestModule : BaseModule<TestConfiguration>
+    public class TestModule : Module<TestConfiguration>
     {
         public TestModule(TestConfiguration configuration, List<IModule> nestedModules) : base(configuration, nestedModules)
         {

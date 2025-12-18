@@ -71,7 +71,7 @@ To migrate existing code, add `[BaubitModule("key")]` to your modules and update
 ### 1. Define a Configuration
 
 ```csharp
-public class MyModuleConfiguration : BaseConfiguration
+public class MyModuleConfiguration : Configuration
 {
     public string ConnectionString { get; set; }
     public int Timeout { get; set; } = 30;
@@ -82,7 +82,7 @@ public class MyModuleConfiguration : BaseConfiguration
 
 ```csharp
 [BaubitModule("mymodule")]  // Required for configuration-based loading
-public class MyModule : BaseModule<MyModuleConfiguration>
+public class MyModule : Module<MyModuleConfiguration>
 {
     // Constructor for loading from IConfiguration (appsettings.json)
     public MyModule(IConfiguration configuration)
@@ -146,7 +146,7 @@ Load ALL modules programmatically using `IComponent`. No configuration file need
 
 ```csharp
 // Define a component that builds modules in code
-public class MyComponent : BaseComponent
+public class MyComponent : Component
 {
     protected override Result<ComponentBuilder> Build(ComponentBuilder builder)
     {
@@ -344,7 +344,7 @@ await Host.CreateApplicationBuilder()
 **Custom factory requirements:**
 - Must implement `IServiceProviderFactory` or `IServiceProviderFactory<TContainerBuilder>`
 - Must have a constructor accepting `(IConfiguration configuration, IComponent[] components)`
-- Must derive from `BaseServiceProviderFactory<TContainerBuilder>` for container integration
+- Must derive from `ServiceProviderFactory<TContainerBuilder>` for container integration
 
 ---
 
@@ -383,7 +383,7 @@ namespace MyProject
 
 ```csharp
 [BaubitModule("my-custom-module")]
-public class MyCustomModule : BaseModule<MyConfig>
+public class MyCustomModule : Module<MyConfig>
 {
     public MyCustomModule(IConfiguration config) : base(config) { }
     
@@ -435,7 +435,7 @@ Marks a module class for compile-time discovery and registration.
 **Usage:**
 ```csharp
 [BaubitModule("mymodule")]
-public class MyModule : BaseModule<MyConfig> { }
+public class MyModule : Module<MyConfig> { }
 ```
 
 **Requirements:**
@@ -499,14 +499,14 @@ Interface for dependency injection modules.
 </details>
 
 <details>
-<summary><strong>BaseModule / BaseModule&lt;TConfiguration&gt;</strong></summary>
+<summary><strong>Module / Module&lt;TConfiguration&gt;</strong></summary>
 
 Abstract base classes for modules.
 
 | Constructor | Description |
 |-------------|-------------|
-| `BaseModule(TConfiguration, List<IModule>)` | Create with config and nested modules |
-| `BaseModule(IConfiguration)` | Create from IConfiguration section |
+| `Module(TConfiguration, List<IModule>)` | Create with config and nested modules |
+| `Module(IConfiguration)` | Create from IConfiguration section |
 
 | Virtual Method | Description |
 |----------------|-------------|
@@ -517,7 +517,7 @@ Abstract base classes for modules.
 </details>
 
 <details>
-<summary><strong>IComponent / BaseComponent</strong></summary>
+<summary><strong>IComponent / Component</strong></summary>
 
 Interface and base class for grouping related modules.
 
@@ -600,13 +600,13 @@ Interface for service provider factories that can be configured via host applica
 </details>
 
 <details>
-<summary><strong>BaseServiceProviderFactory&lt;TContainerBuilder&gt;</strong></summary>
+<summary><strong>ServiceProviderFactory&lt;TContainerBuilder&gt;</strong></summary>
 
 Abstract base class for service provider factories that integrate module-based dependency injection with custom container builders.
 
 | Constructor | Description |
 |-------------|-------------|
-| `BaseServiceProviderFactory(IServiceProviderFactory<TContainerBuilder>, IConfiguration, IComponent[])` | Create with internal factory, configuration, and components |
+| `ServiceProviderFactory(IServiceProviderFactory<TContainerBuilder>, IConfiguration, IComponent[])` | Create with internal factory, configuration, and components |
 
 | Property | Description |
 |----------|-------------|

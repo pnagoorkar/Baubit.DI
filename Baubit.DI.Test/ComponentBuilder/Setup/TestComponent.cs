@@ -6,7 +6,7 @@ namespace Baubit.DI.Test.ComponentBuilder.Setup
     /// <summary>
     /// Test component class for ComponentBuilder tests.
     /// </summary>
-    public class TestComponent : BaseComponent
+    public class TestComponent : Component
     {
         protected override Result<Baubit.DI.ComponentBuilder> Build(Baubit.DI.ComponentBuilder featureBuilder)
         {

@@ -46,7 +46,7 @@ namespace Baubit.DI
         /// Initializes a new instance of the <see cref="ModuleBuilder"/> class.
         /// </summary>
         /// <param name="configurationBuilder">The configuration builder to use.</param>
-        protected ModuleBuilder(Configuration.ConfigurationBuilder configurationBuilder)
+        protected ModuleBuilder(Baubit.Configuration.ConfigurationBuilder configurationBuilder)
         {
             this.configurationBuilder = configurationBuilder;
         }
@@ -58,7 +58,7 @@ namespace Baubit.DI
         /// <returns>A result containing the module builder, or failure information.</returns>
         public static Result<ModuleBuilder> CreateNew(IConfiguration configuration)
         {
-            return Configuration.ConfigurationBuilder.CreateNew()
+            return Baubit.Configuration.ConfigurationBuilder.CreateNew()
                 .Bind(cb => Result.Try(() => new ModuleBuilder(cb)))
                 .Bind(builder => builder.Initialize(configuration));
         }
@@ -112,7 +112,7 @@ namespace Baubit.DI
 
         private static Result<ModuleBuilder> CreateBuilderFromSource(IConfigurationSection sourceSection)
         {
-            return Configuration.ConfigurationBuilder.CreateNew()
+            return Baubit.Configuration.ConfigurationBuilder.CreateNew()
                 .Bind(cb => cb.WithAdditionalConfigurationSources(sourceSection.Get<ConfigurationSource>()))
                 .Bind(cb => cb.Build())
                 .Bind(CreateNew);
@@ -238,25 +238,25 @@ namespace Baubit.DI
     }
 
     /// <summary>
-    /// Generic builder class for creating strongly-typed <see cref="BaseModule{TConfiguration}"/> instances.
+    /// Generic builder class for creating strongly-typed <see cref="Module{TConfiguration}"/> instances.
     /// </summary>
     /// <typeparam name="TModule">The type of module to build.</typeparam>
     /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
     public sealed class ModuleBuilder<TModule, TConfiguration> : ModuleBuilder 
-        where TModule : BaseModule<TConfiguration> 
-        where TConfiguration : BaseConfiguration
+        where TModule : Module<TConfiguration> 
+        where TConfiguration : Configuration
     {
         private Func<TConfiguration, TModule> moduleFactory = null;
         private readonly List<IModule> nestedModules = new List<IModule>();
         private readonly List<Action<TConfiguration>> overrideHandlers = new List<Action<TConfiguration>>();
 
-        private ModuleBuilder(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) : base(configurationBuilder)
+        private ModuleBuilder(Baubit.Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) : base(configurationBuilder)
         {
             this.moduleFactory = moduleFactory;
         }
 
 
-        public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, 
+        public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Baubit.Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, 
                                                                                Func<TConfiguration, TModule> moduleFactory)
         {
             return Result.Try(() => new ModuleBuilder<TModule, TConfiguration>(configurationBuilder, moduleFactory));

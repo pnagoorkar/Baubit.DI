@@ -16,7 +16,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         /// <summary>
         /// Test configuration for unit tests.
         /// </summary>
-        public class TestConfiguration : BaseConfiguration
+        public class TestConfiguration : Configuration
         {
             public string? TestValue { get; set; }
         }
@@ -25,7 +25,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         /// Test module for unit tests.
         /// </summary>
         [BaubitModule("test-modulebuilder")]
-        public class TestModule : BaseModule<TestConfiguration>
+        public class TestModule : Module<TestConfiguration>
         {
             public bool LoadCalled { get; private set; }
             public bool OnInitializedCalled { get; private set; }
@@ -55,7 +55,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         /// Test module that provides known dependencies.
         /// </summary>
         [BaubitModule("test-modulebuilder-deps")]
-        public class TestModuleWithDependencies : BaseModule<TestConfiguration>
+        public class TestModuleWithDependencies : Module<TestConfiguration>
         {
             private readonly TestModule _dependency;
 
@@ -69,7 +69,7 @@ namespace Baubit.DI.Test.ModuleBuilder
                 _dependency = new TestModule(new TestConfiguration(), new List<IModule>());
             }
 
-            protected override IEnumerable<Baubit.DI.BaseModule> GetKnownDependencies()
+            protected override IEnumerable<Baubit.DI.Module> GetKnownDependencies()
             {
                 return new[] { _dependency };
             }

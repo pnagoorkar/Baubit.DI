@@ -13,16 +13,16 @@ namespace Baubit.DI
     /// Components lazily build their modules on first enumeration.
     /// Derived classes must implement <see cref="Build"/> to define which modules are included.
     /// </remarks>
-    public abstract class BaseComponent : IComponent
+    public abstract class Component : IComponent
     {
         private ComponentBuilder componentBuilder;
         private List<IModule> modules;
         private bool disposedValue;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BaseComponent"/> class.
+        /// Initializes a new instance of the <see cref="Component"/> class.
         /// </summary>
-        protected BaseComponent()
+        protected Component()
         {
             componentBuilder = ComponentBuilder.CreateNew().ThrowIfFailed().Value;
         }
