@@ -33,7 +33,7 @@ namespace Baubit.DI
         /// </summary>
         public const string ModuleSourcesSectionKey = "moduleSources";
 
-        protected string moduleTypeValue;
+        protected string moduleKeyValue;
 
         /// <summary>
         /// The configuration builder used to construct the module configuration.
@@ -70,12 +70,12 @@ namespace Baubit.DI
         {
             return Result.Try(() =>
             {
-                moduleTypeValue = configuration[ModuleKey];
-                if (string.IsNullOrWhiteSpace(moduleTypeValue))
+                moduleKeyValue = configuration[ModuleKey];
+                if (string.IsNullOrWhiteSpace(moduleKeyValue))
                 {
                     throw new InvalidOperationException($"Module key '{ModuleKey}' is required but was not specified or is empty. Ensure the configuration contains a '{ModuleKey}' key with a valid module identifier.");
                 }
-                return moduleTypeValue;
+                return moduleKeyValue;
             })
             .Bind(_ => WithAdditionalConfigurationSourcesFrom<ModuleBuilder>(configuration))
             .Bind(_ => WithAdditionalConfigurationsFrom<ModuleBuilder>(configuration))
@@ -153,12 +153,12 @@ namespace Baubit.DI
                 return FailIfDisposed().Bind(() => configurationBuilder.Build()
                                        .Bind(config =>
                                        {                                       
-                                           if (ModuleRegistry.TryCreate(moduleTypeValue, config, out var module))
+                                           if (ModuleRegistry.TryCreate(moduleKeyValue, config, out var module))
                                            {
                                                return Result.Ok(module);
                                            }
                                        
-                                           return Result.Fail<IModule>($"Unknown module key '{moduleTypeValue}'. Ensure the module is annotated with [BaubitModule(\"{moduleTypeValue}\")] attribute.");
+                                           return Result.Fail<IModule>($"Unknown module key '{moduleKeyValue}'. Ensure the module is annotated with [BaubitModule(\"{moduleKeyValue}\")] attribute.");
                                        }));
             }
             finally

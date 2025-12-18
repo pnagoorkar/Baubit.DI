@@ -658,7 +658,7 @@ Extension methods for module operations.
 
 | Key | Description |
 |-----|-------------|
-| `type` | Module key (from `[BaubitModule]` attribute) |
+| `key` | Module key (from `[BaubitModule]` attribute) |
 | `configuration` | Object containing direct configuration values |
 | `configurationSource` | Object specifying external configuration sources |
 | `modules` | Array of nested module definitions (inside `configuration`) |
