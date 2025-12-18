@@ -85,7 +85,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange - Use a key that truly doesn't exist
             var configDict = new Dictionary<string, string?>
             {
-                { "type", "nonexistent-module-key-12345" },
+                { "key", "nonexistent-module-key-12345" },
                 { "TestValue", "test123" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -106,7 +106,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange - Assembly-qualified names are treated as keys and won't be found
             var configDict = new Dictionary<string, string?>
             {
-                { "type", "NonExistent.Type, NonExistent.Assembly" }
+                { "key", "NonExistent.Type, NonExistent.Assembly" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
@@ -163,7 +163,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange - Use a key that truly doesn't exist
             var configDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", "truly-unknown-module-99999" },
+                { "modules:0:key", "truly-unknown-module-99999" },
                 { "modules:0:TestValue", "value1" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -193,9 +193,9 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", "test-modulebuilder" },
+                { "modules:0:key", "test-modulebuilder" },
                 { "modules:0:TestValue", "value1" },
-                { "modules:1:type", "test-modulebuilder" },
+                { "modules:1:key", "test-modulebuilder" },
                 { "modules:1:TestValue", "value2" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -216,7 +216,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange - Assembly-qualified names are treated as keys
             var configDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", "Invalid.Type, Invalid.Assembly" }
+                { "modules:0:key", "Invalid.Type, Invalid.Assembly" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
@@ -241,7 +241,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange - Create a JSON file for indirect module loading
             var tempFile = Path.GetTempFileName();
             var moduleType = "test-modulebuilder";
-            File.WriteAllText(tempFile, $"{{ \"type\": \"{moduleType}\", \"TestValue\": \"fromSource\" }}");
+            File.WriteAllText(tempFile, $"{{ \"key\": \"{moduleType}\", \"TestValue\": \"fromSource\" }}");
 
             try
             {
@@ -272,13 +272,13 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange - Create a JSON file for indirect module loading
             var tempFile = Path.GetTempFileName();
             var moduleType = "test-modulebuilder";
-            File.WriteAllText(tempFile, $"{{ \"type\": \"{moduleType}\", \"TestValue\": \"fromSource\" }}");
+            File.WriteAllText(tempFile, $"{{ \"key\": \"{moduleType}\", \"TestValue\": \"fromSource\" }}");
 
             try
             {
                 var configDict = new Dictionary<string, string?>
                 {
-                    { "modules:0:type", moduleType },
+                    { "modules:0:key", moduleType },
                     { "modules:0:TestValue", "direct" },
                     { "moduleSources:0:jsonUriStrings:0", $"file://{tempFile}" }
                 };
@@ -309,7 +309,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", "test-modulebuilder" },
+                { "key", "test-modulebuilder" },
                 { "TestValue", "testValue" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -333,7 +333,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", "test-modulebuilder" }
+                { "key", "test-modulebuilder" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
@@ -414,7 +414,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", "test-modulebuilder" }
+                { "key", "test-modulebuilder" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
@@ -433,7 +433,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", "test-modulebuilder" }
+                { "key", "test-modulebuilder" }
             };
             var configuration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(configDict)
@@ -516,7 +516,7 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var nestedConfigDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", "test-modulebuilder" },
+                { "modules:0:key", "test-modulebuilder" },
                 { "modules:0:TestValue", "nested" }
             };
             var nestedConfiguration = new MsConfigurationBuilder()
@@ -542,12 +542,12 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var nestedConfigDict1 = new Dictionary<string, string?>
             {
-                { "modules:0:type", "test-modulebuilder" },
+                { "modules:0:key", "test-modulebuilder" },
                 { "modules:0:TestValue", "nested1" }
             };
             var nestedConfigDict2 = new Dictionary<string, string?>
             {
-                { "modules:0:type", "test-modulebuilder" },
+                { "modules:0:key", "test-modulebuilder" },
                 { "modules:0:TestValue", "nested2" }
             };
             var config1 = new MsConfigurationBuilder().AddInMemoryCollection(nestedConfigDict1).Build();
@@ -594,7 +594,7 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var invalidConfigDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", "Invalid.Type, Invalid.Assembly" }
+                { "modules:0:key", "Invalid.Type, Invalid.Assembly" }
             };
             var invalidConfiguration = new MsConfigurationBuilder()
                 .AddInMemoryCollection(invalidConfigDict)
@@ -620,12 +620,12 @@ namespace Baubit.DI.Test.ModuleBuilder
 
             var validConfigDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", "test-modulebuilder" },
+                { "modules:0:key", "test-modulebuilder" },
                 { "modules:0:TestValue", "valid" }
             };
             var invalidConfigDict = new Dictionary<string, string?>
             {
-                { "modules:0:type", "Invalid.Type, Invalid.Assembly" }
+                { "modules:0:key", "Invalid.Type, Invalid.Assembly" }
             };
             var validConfig = new MsConfigurationBuilder().AddInMemoryCollection(validConfigDict).Build();
             var invalidConfig = new MsConfigurationBuilder().AddInMemoryCollection(invalidConfigDict).Build();

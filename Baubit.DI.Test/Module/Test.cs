@@ -110,7 +110,7 @@ namespace Baubit.DI.Test.Module
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", "test-basemodule" },
+                { "key", "test-basemodule" },
                 { "TestValue", "testValue" }
             };
             var configuration = new MsConfigurationBuilder()

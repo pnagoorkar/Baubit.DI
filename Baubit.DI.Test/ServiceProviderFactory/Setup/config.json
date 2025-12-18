@@ -1,7 +1,7 @@
 {
   "modules": [
     {
-      "type": "test-serviceprovider"
+      "key": "test-serviceprovider"
     }
   ]
 }

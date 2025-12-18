@@ -60,7 +60,7 @@ namespace Baubit.DI.Test.ModuleExtensions
             // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Value);
-            Assert.Contains("type", result.Value);
+            Assert.Contains("key", result.Value);
             Assert.Contains("configuration", result.Value);
             Assert.Contains("TestValue", result.Value);
             Assert.Contains("test123", result.Value);
@@ -244,7 +244,7 @@ namespace Baubit.DI.Test.ModuleExtensions
             var root = doc.RootElement;
 
             // Assert - Structure is correct with module key
-            Assert.True(root.TryGetProperty("type", out var typeElement));
+            Assert.True(root.TryGetProperty("key", out var typeElement));
             Assert.Equal("test-module-ext", typeElement.GetString());
             Assert.True(root.TryGetProperty("configuration", out var configElement));
             Assert.True(configElement.TryGetProperty("TestValue", out var testValueElement));
@@ -301,7 +301,7 @@ namespace Baubit.DI.Test.ModuleExtensions
             Assert.Single(modulesArray.EnumerateArray());
             
             var parentModuleJson = modulesArray.EnumerateArray().First();
-            Assert.True(parentModuleJson.TryGetProperty("type", out var typeElement));
+            Assert.True(parentModuleJson.TryGetProperty("key", out var typeElement));
             Assert.Equal("test-module-ext", typeElement.GetString());
             
             Assert.True(parentModuleJson.TryGetProperty("configuration", out var configElement));
@@ -315,7 +315,7 @@ namespace Baubit.DI.Test.ModuleExtensions
             Assert.Single(nestedModulesArray.EnumerateArray());
             
             var nestedModuleJson = nestedModulesArray.EnumerateArray().First();
-            Assert.True(nestedModuleJson.TryGetProperty("type", out var nestedTypeElement));
+            Assert.True(nestedModuleJson.TryGetProperty("key", out var nestedTypeElement));
             Assert.Equal("test-module-ext", nestedTypeElement.GetString());
             
             Assert.True(nestedModuleJson.TryGetProperty("configuration", out var nestedConfigElement));

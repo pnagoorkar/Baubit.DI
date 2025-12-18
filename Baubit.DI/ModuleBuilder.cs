@@ -19,9 +19,9 @@ namespace Baubit.DI
     public class ModuleBuilder : IDisposable
     {
         /// <summary>
-        /// Configuration key for specifying the module type.
+        /// Configuration key for specifying the module key.
         /// </summary>
-        public const string ModuleTypeKey = "type";
+        public const string ModuleKey = "key";
 
         /// <summary>
         /// Configuration key for the section containing nested module definitions.
@@ -70,10 +70,10 @@ namespace Baubit.DI
         {
             return Result.Try(() =>
             {
-                moduleTypeValue = configuration[ModuleTypeKey];
+                moduleTypeValue = configuration[ModuleKey];
                 if (string.IsNullOrWhiteSpace(moduleTypeValue))
                 {
-                    throw new InvalidOperationException($"Module type key '{ModuleTypeKey}' is required but was not specified or is empty. Ensure the configuration contains a '{ModuleTypeKey}' key with a valid module identifier.");
+                    throw new InvalidOperationException($"Module key '{ModuleKey}' is required but was not specified or is empty. Ensure the configuration contains a '{ModuleKey}' key with a valid module identifier.");
                 }
                 return moduleTypeValue;
             })

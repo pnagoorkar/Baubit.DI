@@ -124,7 +124,7 @@ await Host.CreateApplicationBuilder()
 {
   "modules": [
     {
-      "type": "mymodule",
+      "key": "mymodule",
       "configuration": {
         "connectionString": "Server=localhost;Database=mydb"
       }
@@ -208,13 +208,13 @@ Configuration values are enclosed in a `configuration` section:
 {
   "modules": [
     {
-      "type": "mymodule",
+      "key": "mymodule",
       "configuration": {
         "connectionString": "Server=localhost;Database=mydb",
         "timeout": 60,
         "modules": [
           {
-            "type": "nested-module",
+            "key": "nested-module",
             "configuration": { }
           }
         ]
@@ -232,7 +232,7 @@ Configuration is loaded from external sources via `configurationSource`:
 {
   "modules": [    
     {
-      "type": "mymodule",
+      "key": "mymodule",
       "configurationSource": {
         "jsonUriStrings": ["file://path/to/config.json"]
       }
@@ -248,7 +248,7 @@ Configuration is loaded from external sources via `configurationSource`:
   "timeout": 60,
   "modules": [    
     {
-      "type": "nested-module",
+      "key": "nested-module",
       "configuration": {
         "somePropKey": "some_prop_value"
       }
@@ -265,7 +265,7 @@ Combine direct values with external sources:
 {
   "modules": [
     {
-      "type": "mymodule",
+      "key": "mymodule",
       "configuration": {
         "connectionString": "Server=localhost;Database=mydb"
       },
@@ -283,7 +283,7 @@ Combine direct values with external sources:
   "timeout": 60,
   "modules": [
     {
-      "type": "nested-module",
+      "key": "nested-module",
       "configuration": { }
     }
   ]
@@ -302,15 +302,15 @@ The module system supports recursive loading - modules can contain nested module
 {
   "modules": [
     {
-      "type": "root-module",
+      "key": "root-module",
       "configuration": {
         "modules": [
           {
-            "type": "feature-module",
+            "key": "feature-module",
             "configuration": {
               "modules": [
                 {
-                  "type": "subfeature-module",
+                  "key": "subfeature-module",
                   "configuration": { }
                 }
               ]
@@ -412,7 +412,7 @@ await Host.CreateApplicationBuilder()
 {
   "modules": [
     {
-      "type": "my-custom-module",
+      "key": "my-custom-module",
       "configuration": { }
     }
   ]

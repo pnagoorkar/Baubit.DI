@@ -74,7 +74,7 @@ Compile Time:
 5. Compilation succeeds with strongly-typed registry
 
 Runtime:
-1. Configuration specifies module key: "type": "mymodule"
+1. Configuration specifies module key: "key": "mymodule"
 2. ModuleBuilder.Build() checks ModuleRegistry.TryCreate("mymodule", ...)
 3. Registry returns pre-built factory delegate
 4. Factory creates module instance securely

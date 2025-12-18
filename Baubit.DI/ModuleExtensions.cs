@@ -156,7 +156,7 @@ namespace Baubit.DI
                         "Secure module loading requires compile-time registration via the attribute.");
                 }
 
-                writer.WriteString("type", baubitModuleAttr.Key);
+                writer.WriteString("key", baubitModuleAttr.Key);
                 writer.WritePropertyName("configuration");
                 using (var configJson = JsonDocument.Parse(JsonSerializer.Serialize(Convert.ChangeType(module.Configuration, module.Configuration.GetType()), jsonSerializerOptions)))
                 {
