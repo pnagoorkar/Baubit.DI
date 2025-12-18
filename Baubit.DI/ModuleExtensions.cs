@@ -144,7 +144,19 @@ namespace Baubit.DI
         {
             return Result.Try(() =>
             {
-                writer.WriteString("type", module.GetType().GetBaubitFormattedAssemblyQualifiedName().ThrowIfFailed().Value);
+                // Get the module key from the [BaubitModule] attribute
+                var moduleType = module.GetType();
+                var baubitModuleAttr = moduleType.GetCustomAttributes(typeof(BaubitModuleAttribute), false)
+                    .FirstOrDefault() as BaubitModuleAttribute;
+                
+                if (baubitModuleAttr == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Module type '{moduleType.FullName}' must be annotated with [BaubitModule(\"key\")] attribute for serialization. " +
+                        "Secure module loading requires compile-time registration via the attribute.");
+                }
+
+                writer.WriteString("key", baubitModuleAttr.Key);
                 writer.WritePropertyName("configuration");
                 using (var configJson = JsonDocument.Parse(JsonSerializer.Serialize(Convert.ChangeType(module.Configuration, module.Configuration.GetType()), jsonSerializerOptions)))
                 {
@@ -154,11 +166,12 @@ namespace Baubit.DI
                     {
                         property.WriteTo(writer); // copy all properties as-is
                     }
+                    
+                    writer.WriteEndObject();  // Close configuration object
                 }
 
                 module.NestedModules.WriteModules(writer, jsonSerializerOptions).ThrowIfFailed();
 
-                writer.WriteEndObject();
                 return writer;
             });
         }

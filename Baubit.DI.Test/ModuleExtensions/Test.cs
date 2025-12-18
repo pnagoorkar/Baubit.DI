@@ -15,7 +15,7 @@ namespace Baubit.DI.Test.ModuleExtensions
         /// <summary>
         /// Test configuration for unit tests.
         /// </summary>
-        public class TestConfiguration : AConfiguration
+        public class TestConfiguration : Configuration
         {
             public string? TestValue { get; set; }
             public int NumericValue { get; set; }
@@ -24,7 +24,8 @@ namespace Baubit.DI.Test.ModuleExtensions
         /// <summary>
         /// Test module for unit tests.
         /// </summary>
-        public class TestModule : AModule<TestConfiguration>
+        [BaubitModule("test-module-ext")]
+        public class TestModule : Module<TestConfiguration>
         {
             public TestModule(TestConfiguration configuration, List<IModule>? nestedModules = null) 
                 : base(configuration, nestedModules)
@@ -59,7 +60,7 @@ namespace Baubit.DI.Test.ModuleExtensions
             // Assert
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Value);
-            Assert.Contains("type", result.Value);
+            Assert.Contains("key", result.Value);
             Assert.Contains("configuration", result.Value);
             Assert.Contains("TestValue", result.Value);
             Assert.Contains("test123", result.Value);
@@ -242,9 +243,9 @@ namespace Baubit.DI.Test.ModuleExtensions
             using var doc = JsonDocument.Parse(serializeResult.Value);
             var root = doc.RootElement;
 
-            // Assert - Structure is correct
-            Assert.True(root.TryGetProperty("type", out var typeElement));
-            Assert.Contains(typeof(TestModule).FullName!, typeElement.GetString());
+            // Assert - Structure is correct with module key
+            Assert.True(root.TryGetProperty("key", out var typeElement));
+            Assert.Equal("test-module-ext", typeElement.GetString());
             Assert.True(root.TryGetProperty("configuration", out var configElement));
             Assert.True(configElement.TryGetProperty("TestValue", out var testValueElement));
             Assert.Equal("roundtrip", testValueElement.GetString());
@@ -271,6 +272,102 @@ namespace Baubit.DI.Test.ModuleExtensions
             Assert.True(root.TryGetProperty("modules", out var modulesElement));
             Assert.Equal(JsonValueKind.Array, modulesElement.ValueKind);
             Assert.Single(modulesElement.EnumerateArray());
+        }
+
+        [Fact]
+        public void RoundTrip_SerializeThenDeserializeJson_ProducesValidStructure()
+        {
+            // Arrange - Create modules with nested modules
+            var nestedConfig = new TestConfiguration { TestValue = "nested-value", NumericValue = 42 };
+            var nestedModule = new TestModule(nestedConfig);
+            var parentConfig = new TestConfiguration { TestValue = "parent-value", NumericValue = 100 };
+            var parentModule = new TestModule(parentConfig, new List<IModule> { nestedModule });
+            var modules = new List<IModule> { parentModule };
+            var options = new JsonSerializerOptions { WriteIndented = true };
+
+            // Act - Serialize to JSON
+            var serializeResult = modules.SerializeAsJsonObject(options);
+            Assert.True(serializeResult.IsSuccess);
+            
+            var json = serializeResult.Value;
+            
+            // Parse JSON to verify structure is correct for loading
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            
+            // Assert - JSON structure is valid for module loading
+            Assert.True(root.TryGetProperty("modules", out var modulesArray));
+            Assert.Equal(JsonValueKind.Array, modulesArray.ValueKind);
+            Assert.Single(modulesArray.EnumerateArray());
+            
+            var parentModuleJson = modulesArray.EnumerateArray().First();
+            Assert.True(parentModuleJson.TryGetProperty("key", out var typeElement));
+            Assert.Equal("test-module-ext", typeElement.GetString());
+            
+            Assert.True(parentModuleJson.TryGetProperty("configuration", out var configElement));
+            Assert.True(configElement.TryGetProperty("TestValue", out var testValueElement));
+            Assert.Equal("parent-value", testValueElement.GetString());
+            Assert.True(configElement.TryGetProperty("NumericValue", out var numericValueElement));
+            Assert.Equal(100, numericValueElement.GetInt32());
+            
+            // Verify nested modules are in the structure
+            Assert.True(parentModuleJson.TryGetProperty("modules", out var nestedModulesArray));
+            Assert.Single(nestedModulesArray.EnumerateArray());
+            
+            var nestedModuleJson = nestedModulesArray.EnumerateArray().First();
+            Assert.True(nestedModuleJson.TryGetProperty("key", out var nestedTypeElement));
+            Assert.Equal("test-module-ext", nestedTypeElement.GetString());
+            
+            Assert.True(nestedModuleJson.TryGetProperty("configuration", out var nestedConfigElement));
+            Assert.True(nestedConfigElement.TryGetProperty("TestValue", out var nestedTestValueElement));
+            Assert.Equal("nested-value", nestedTestValueElement.GetString());
+            Assert.True(nestedConfigElement.TryGetProperty("NumericValue", out var nestedNumericValueElement));
+            Assert.Equal(42, nestedNumericValueElement.GetInt32());
+        }
+
+        [Fact]
+        public void RoundTrip_SerializeLoadSerializeCompare_ProducesIdenticalJson()
+        {
+            // Step 1: Arrange - Create simple modules without nesting for round-trip test
+            var config1 = new TestConfiguration { TestValue = "first-value", NumericValue = 100 };
+            var module1 = new TestModule(config1);
+            var config2 = new TestConfiguration { TestValue = "second-value", NumericValue = 200 };
+            var module2 = new TestModule(config2);
+            var originalModules = new List<IModule> { module1, module2 };
+            var options = new JsonSerializerOptions { WriteIndented = false };
+
+            // Step 2: Serialize module tree to JSON
+            var firstSerializeResult = originalModules.SerializeAsJsonObject(options);
+            Assert.True(firstSerializeResult.IsSuccess);
+            var firstJson = firstSerializeResult.Value;
+
+            // Step 3: Load modules from serialized JSON using ModuleBuilder
+            var configBuilder = new MsConfigurationBuilder();
+            configBuilder.AddJsonStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(firstJson)));
+            var configuration = configBuilder.Build();
+            
+            var loadResult = DI.ModuleBuilder.CreateMany(configuration);
+            Assert.True(loadResult.IsSuccess);
+            var loadedBuilders = loadResult.Value;
+            
+            // Build all loaded modules
+            var loadedModules = new List<IModule>();
+            foreach (var builder in loadedBuilders)
+            {
+                var buildResult = builder.Build();
+                Assert.True(buildResult.IsSuccess);
+                loadedModules.Add(buildResult.Value);
+            }
+            
+            Assert.Equal(2, loadedModules.Count); // Should have 2 modules
+
+            // Step 4: Serialize the loaded modules again
+            var secondSerializeResult = loadedModules.SerializeAsJsonObject(options);
+            Assert.True(secondSerializeResult.IsSuccess);
+            var secondJson = secondSerializeResult.Value;
+
+            // Step 5: Compare JSON strings - they should be identical
+            Assert.Equal(firstJson, secondJson);
         }
 
         #endregion
