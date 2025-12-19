@@ -15,13 +15,18 @@ public static class ModulesLoadedFromAppsettings
 {
     public static async Task RunAsync()
     {
-        // Build host with modules from appsettings.json only
-        var builder = Host.CreateApplicationBuilder();
+        // Build host with modules from appsettings.json only  
+        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        {
+            Args = Array.Empty<string>(),
+            ContentRootPath = AppContext.BaseDirectory
+        });
+        
         builder.UseConfiguredServiceProviderFactory();
         
         using var host = builder.Build();
         
-        // Verify the module was loaded from appsettings.json
+        // Verify the greeting module was loaded from appsettings.json
         var greetingService = host.Services.GetRequiredService<IGreetingService>();
         Console.WriteLine($"  {greetingService.GetGreeting()}");
         

@@ -1,7 +1,7 @@
 {
   "modules": [
     {
-      "type": "Baubit.DI.Test.HostBuilderExtensions.Setup.TestModule, Baubit.DI.Test"
+      "key": "test-hostbuilder"
     }
   ]
 }

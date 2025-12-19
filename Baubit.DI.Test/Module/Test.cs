@@ -1,22 +1,24 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using FluentResults;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MsConfigurationBuilder = Microsoft.Extensions.Configuration.ConfigurationBuilder;
 
-namespace Baubit.DI.Test.AModule
+namespace Baubit.DI.Test.Module
 {
     /// <summary>
-    /// Unit tests for <see cref="DI.AModule"/> and <see cref="DI.AModule{TConfiguration}"/>
+    /// Unit tests for <see cref="DI.Module"/> and <see cref="DI.Module{TConfiguration}"/>
     /// </summary>
     public class Test
     {
         #region Test Types
 
-        public class TestConfiguration : AConfiguration
+        public class TestConfiguration : Configuration
         {
             public string? TestValue { get; set; }
         }
 
-        public class TestModule : AModule<TestConfiguration>
+        [BaubitModule("test-basemodule")]
+        public class TestModule : Module<TestConfiguration>
         {
             public bool LoadCalled { get; private set; }
             public bool OnInitializedCalled { get; private set; }
@@ -45,9 +47,14 @@ namespace Baubit.DI.Test.AModule
         /// <summary>
         /// Test module that uses the default null parameter for nestedModules.
         /// </summary>
-        public class TestModuleWithNullDefault : AModule<TestConfiguration>
+        [BaubitModule("test-basemodule-null")]
+        public class TestModuleWithNullDefault : Module<TestConfiguration>
         {
             public TestModuleWithNullDefault(TestConfiguration configuration) : base(configuration)
+            {
+            }
+
+            public TestModuleWithNullDefault(IConfiguration configuration) : base(configuration)
             {
             }
 
@@ -56,7 +63,8 @@ namespace Baubit.DI.Test.AModule
             }
         }
 
-        public class TestModuleWithDependencies : AModule<TestConfiguration>
+        [BaubitModule("test-basemodule-deps")]
+        public class TestModuleWithDependencies : Module<TestConfiguration>
         {
             private readonly TestModule _dependency;
 
@@ -65,7 +73,12 @@ namespace Baubit.DI.Test.AModule
                 _dependency = new TestModule(new TestConfiguration(), new List<IModule>());
             }
 
-            protected override IEnumerable<Baubit.DI.AModule> GetKnownDependencies()
+            public TestModuleWithDependencies(IConfiguration configuration) : base(configuration)
+            {
+                _dependency = new TestModule(new TestConfiguration(), new List<IModule>());
+            }
+
+            protected override IEnumerable<Baubit.DI.Module> GetKnownDependencies()
             {
                 return new[] { _dependency };
             }
@@ -73,7 +86,7 @@ namespace Baubit.DI.Test.AModule
 
         #endregion
 
-        #region AModule Constructor Tests
+        #region Module Constructor Tests
 
         [Fact]
         public void Constructor_WithConfigurationAndNestedModules_SetsProperties()
@@ -97,7 +110,7 @@ namespace Baubit.DI.Test.AModule
             // Arrange
             var configDict = new Dictionary<string, string?>
             {
-                { "type", typeof(TestModule).AssemblyQualifiedName },
+                { "key", "test-basemodule" },
                 { "TestValue", "testValue" }
             };
             var configuration = new MsConfigurationBuilder()
@@ -159,7 +172,7 @@ namespace Baubit.DI.Test.AModule
 
         #endregion
 
-        #region AModule Configuration Property Tests
+        #region Module Configuration Property Tests
 
         [Fact]
         public void Configuration_ReturnsStronglyTypedConfiguration()
@@ -178,7 +191,7 @@ namespace Baubit.DI.Test.AModule
 
         #endregion
 
-        #region AModule Load Tests
+        #region Module Load Tests
 
         [Fact]
         public void Load_WhenOverridden_IsCalled()
@@ -214,7 +227,7 @@ namespace Baubit.DI.Test.AModule
         /// <summary>
         /// Helper module that tracks load order
         /// </summary>
-        private class TrackingModule : AModule<TestConfiguration>
+        private class TrackingModule : Module<TestConfiguration>
         {
             private readonly string _name;
             private readonly List<string> _loadOrder;
@@ -235,7 +248,7 @@ namespace Baubit.DI.Test.AModule
 
         #endregion
 
-        #region AModule NestedModules Tests
+        #region Module NestedModules Tests
 
         [Fact]
         public void NestedModules_IsReadOnly()
@@ -248,22 +261,19 @@ namespace Baubit.DI.Test.AModule
             Assert.IsAssignableFrom<IReadOnlyList<IModule>>(module.NestedModules);
         }
 
-        [Fact]
-        public void NestedModules_WithNestedModulesInConfiguration_LoadsFromConfiguration()
+        [Theory]
+        [InlineData("Baubit.DI.Test;Module.Setup.config.json")]
+        public void NestedModules_WithNestedModulesInConfiguration_LoadsFromConfiguration(string configFile)
         {
-            // Arrange
-            var configDict = new Dictionary<string, string?>
-            {
-                { "TestValue", "parent" },
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
-                { "modules:0:TestValue", "nested1" }
-            };
-            var configuration = new MsConfigurationBuilder()
-                .AddInMemoryCollection(configDict)
-                .Build();
-
             // Act
-            var module = new TestModule(configuration);
+            var moduleBuildResult = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+                                                                             .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
+                                                                             .Bind(cb => cb.Build())
+                                                                             .Bind(cfg => Result.Try(() => new TestModule(cfg)));
+
+            Assert.True(moduleBuildResult.IsSuccess);
+
+            var module = moduleBuildResult.Value;
 
             // Assert
             Assert.Single(module.NestedModules);

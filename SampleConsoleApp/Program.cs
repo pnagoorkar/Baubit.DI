@@ -2,9 +2,12 @@
 // Baubit.DI Sample Console Application
 // ============================================================================
 // This application demonstrates three patterns for loading DI modules:
-//   Pattern 1: From appsettings.json only
+//   Pattern 1: From appsettings.json only (secure module registry)
 //   Pattern 2: From code only (IComponent)
 //   Pattern 3: Hybrid - both appsettings.json AND code
+//
+// The GreetingModule uses [BaubitModule("greeting")] to enable secure loading
+// from configuration files.
 // ============================================================================
 
 using Baubit.DI;
@@ -13,6 +16,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SampleConsoleApp;
+
+// Register modules from this assembly with the secure module registry
+// This uses the source-generated Register() method
+SampleModuleRegistry.Register();
 
 Console.WriteLine("=== Baubit.DI Sample Application ===\n");
 
@@ -35,7 +42,7 @@ Console.WriteLine("\n=== All patterns completed ===");
 /// <summary>
 /// Interface for the greeting service - allows verification of which module registered it.
 /// </summary>
-interface IGreetingService
+public interface IGreetingService
 {
     string GetGreeting();
 }
@@ -43,7 +50,7 @@ interface IGreetingService
 /// <summary>
 /// A simple greeting service that returns a configured message.
 /// </summary>
-class GreetingService : IGreetingService
+public class GreetingService : IGreetingService
 {
     private readonly string _message;
 
@@ -64,7 +71,7 @@ class GreetingService : IGreetingService
 /// - When loaded from appsettings.json, properties are bound automatically
 /// - When created in code, properties are set directly
 /// </summary>
-class GreetingModuleConfiguration : AConfiguration
+public class GreetingModuleConfiguration : Configuration
 {
     public string Message { get; set; } = "Default greeting";
 }
@@ -76,11 +83,14 @@ class GreetingModuleConfiguration : AConfiguration
 /// <summary>
 /// A module that registers IGreetingService.
 /// Demonstrates:
+/// - Module attribute for secure loading: [BaubitModule("greeting")]
 /// - Two constructors (IConfiguration vs typed configuration)
 /// - Service registration in Load()
 /// - Calling base.Load() for nested modules
+/// Configuration example: { "key": "greeting", "configuration": { "Message": "Hello!" } }
 /// </summary>
-class GreetingModule : AModule<GreetingModuleConfiguration>
+[BaubitModule("greeting")]
+public class GreetingModule : Module<GreetingModuleConfiguration>
 {
     // Constructor for loading from appsettings.json
     public GreetingModule(IConfiguration configuration) : base(configuration) { }
@@ -103,7 +113,7 @@ class GreetingModule : AModule<GreetingModuleConfiguration>
 /// <summary>
 /// A component that creates GreetingModule in code with a custom message.
 /// </summary>
-class CodeGreetingComponent : AComponent
+public class CodeGreetingComponent : Component
 {
     private readonly string _message;
 
@@ -117,7 +127,7 @@ class CodeGreetingComponent : AComponent
         return componentBuilder.WithModule<GreetingModule, GreetingModuleConfiguration>(config =>
         {
             config.Message = _message;
-        });
+        }, cfg => new GreetingModule(cfg));
     }
 }
 
