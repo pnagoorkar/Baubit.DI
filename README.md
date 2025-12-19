@@ -107,11 +107,16 @@ public class MyModule : Module<MyModuleConfiguration>
 
 Baubit.DI supports three patterns for creating applications. Each pattern has its use cases.
 
+> **Important:** You must call the `Register()` method on each module registry (typically 1 per library) before module loading. See [Consumer Module Registration](#consumer-module-registration).
+
 ### Pattern 1: Modules from appsettings.json
 
 Load ALL modules from configuration. Module types, their configurations, and nested modules are defined in JSON.
 
 ```csharp
+// Register consumer modules first (if any)
+MyModuleRegistry.Register();
+
 // appsettings.json defines all modules
 await Host.CreateApplicationBuilder()
           .UseConfiguredServiceProviderFactory()
@@ -145,6 +150,9 @@ await Host.CreateApplicationBuilder()
 Load ALL modules programmatically using `IComponent`. No configuration file needed.
 
 ```csharp
+// Register consumer modules first (if any)
+MyModuleRegistry.Register();
+
 // Define a component that builds modules in code
 public class MyComponent : Component
 {
@@ -176,6 +184,9 @@ await Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings())
 Combine BOTH configuration-based and code-based module loading. This is the most flexible approach.
 
 ```csharp
+// Register consumer modules first (if any)
+MyModuleRegistry.Register();
+
 // Load modules from BOTH appsettings.json AND code
 await Host.CreateApplicationBuilder()
           .UseConfiguredServiceProviderFactory(componentsFactory: () => [new MyComponent()])
@@ -352,17 +363,15 @@ await Host.CreateApplicationBuilder()
 
 Consumer projects (test projects, libraries, plugins) can register their own modules using the `[GeneratedModuleRegistry]` attribute.
 
-### Step 1: Reference the Generator
+**Important:** Registry registration must be called **before** any module loading operations.
 
-Add the generator as an analyzer in your project:
+### Step 1: Install Baubit.DI
 
-```xml
-<ItemGroup>
-  <ProjectReference Include="..\Baubit.DI.Generators\Baubit.DI.Generators.csproj" 
-                    OutputItemType="Analyzer" 
-                    ReferenceOutputAssembly="false" />
-</ItemGroup>
+```bash
+dotnet add package Baubit.DI
 ```
+
+The generator is automatically included in the package.
 
 ### Step 2: Create a Registry Class
 
@@ -378,6 +387,8 @@ namespace MyProject
     }
 }
 ```
+
+The generator discovers all modules in your assembly marked with `[BaubitModule]` and generates a `Register()` method in your namespace.
 
 ### Step 3: Define Your Modules
 
@@ -396,8 +407,10 @@ public class MyCustomModule : Module<MyConfig>
 
 ### Step 4: Register at Startup
 
+**Critical:** Call `Register()` before any module loading:
+
 ```csharp
-// Call before any module loading
+// MUST be called before any module loading
 MyModuleRegistry.Register();
 
 // Now your modules are available in configuration
@@ -406,6 +419,12 @@ await Host.CreateApplicationBuilder()
           .Build()
           .RunAsync();
 ```
+
+**Why this is required:**
+- The main `Baubit.DI.ModuleRegistry` only knows about modules in the Baubit.DI assembly
+- Consumer assemblies must explicitly register their modules with `ModuleRegistry.RegisterExternal()`
+- The generated `Register()` method does this automatically
+- Registration must happen before `UseConfiguredServiceProviderFactory()` initializes the registry
 
 **Configuration:**
 ```json

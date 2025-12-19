@@ -18,12 +18,8 @@ using Microsoft.Extensions.Hosting;
 using SampleConsoleApp;
 
 // Register modules from this assembly with the secure module registry
-// Note: Ideally SampleModuleRegistry.Register() would be called here once the generator works
-// For now, we manually register the GreetingModule
-ModuleRegistry.RegisterExternal(dict =>
-{
-    dict["greeting"] = cfg => new GreetingModule(cfg);
-});
+// This uses the source-generated Register() method
+SampleModuleRegistry.Register();
 
 Console.WriteLine("=== Baubit.DI Sample Application ===\n");
 
