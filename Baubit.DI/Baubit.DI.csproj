@@ -24,10 +24,19 @@
     <None Include="../LICENSE" Pack="true" PackagePath="." />
   </ItemGroup>
 
+  <!-- Use project reference when UseLocalBaubitDependencies is true -->
+  <ItemGroup Condition="'$(UseLocalBaubitDependencies)' == 'true'">
+    <ProjectReference Include="$(BaubitConfigurationProjectPath)" />
+  </ItemGroup>
+
+  <!-- Use package reference when UseLocalBaubitDependencies is false -->
+  <ItemGroup Condition="'$(UseLocalBaubitDependencies)' != 'true'">
+    <PackageReference Include="Baubit.Configuration" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="Baubit.Configuration" Version="2025.51.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
+    <PackageReference Include="Microsoft.Extensions.Hosting"/>
   </ItemGroup>
 
   <ItemGroup>
