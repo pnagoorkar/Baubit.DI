@@ -30,7 +30,7 @@ namespace Baubit.DI.Test.ModuleBuilder
             public bool LoadCalled { get; private set; }
             public bool OnInitializedCalled { get; private set; }
 
-            public TestModule(TestConfiguration configuration, List<IModule> nestedModules = null) : base(configuration, nestedModules)
+            public TestModule(TestConfiguration configuration, List<IModule>? nestedModules = null) : base(configuration, nestedModules)
             {
             }
 
