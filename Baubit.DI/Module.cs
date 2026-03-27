@@ -4,6 +4,7 @@ using FluentResults;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text.Json.Serialization;
 
@@ -117,7 +118,7 @@ namespace Baubit.DI
         /// default values if the source does not provide one.</returns>
         private static TConfiguration BuildConfiguration(IConfiguration configuration)
         {
-            return configuration.Get<TConfiguration>() ?? ConfigurationBuilder<TConfiguration>.CreateNew().Build().Value;
+            return configuration.Get<TConfiguration>() ?? ConfigurationBuilder<TConfiguration>.CreateNew().Bind(cb => cb.Build()).Value;
         }
 
         private static List<IModule> LoadNestedModules(IConfiguration configuration)
