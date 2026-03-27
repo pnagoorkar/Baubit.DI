@@ -248,6 +248,162 @@ namespace Baubit.DI.Test.Module
 
         #endregion
 
+        #region Module Constructor - Null Configuration Guard Tests (Issue #15)
+
+        /// <summary>
+        /// Regression test for issue #15:
+        /// When IConfiguration has no keys at all, Configuration must not be null.
+        /// </summary>
+        [Fact]
+        public void Constructor_WithEmptyIConfiguration_ConfigurationIsNotNull()
+        {
+            // Arrange – completely empty IConfiguration (no keys at all)
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>())
+                .Build();
+
+            // Act
+            var module = new TestModule(configuration);
+
+            // Assert
+            Assert.NotNull(module.Configuration);
+        }
+
+        /// <summary>
+        /// Regression test for issue #15:
+        /// IConfiguration built from empty JSON ("{}") must not produce a null Configuration.
+        /// </summary>
+        [Fact]
+        public void Constructor_WithEmptyJsonIConfiguration_ConfigurationIsNotNull()
+        {
+            // Arrange – IConfiguration built from an empty JSON string
+            var configuration = new MsConfigurationBuilder()
+                .AddJsonStream(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes("{}")))
+                .Build();
+
+            // Act
+            var module = new TestModule(configuration);
+
+            // Assert
+            Assert.NotNull(module.Configuration);
+        }
+
+        /// <summary>
+        /// Regression test for issue #15:
+        /// When IConfiguration contains only the module routing key but no configuration property
+        /// values, Configuration must not be null and its properties must have their default values.
+        /// </summary>
+        [Fact]
+        public void Constructor_WithIConfigurationContainingOnlyModuleKey_ConfigurationIsNotNullAndHasDefaults()
+        {
+            // Arrange – only the routing key is present; no TestValue key
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "key", "test-basemodule" }
+                })
+                .Build();
+
+            // Act
+            var module = new TestModule(configuration);
+
+            // Assert
+            Assert.NotNull(module.Configuration);
+            Assert.Null(module.Configuration.TestValue);   // default value for string is null
+        }
+
+        /// <summary>
+        /// Regression test for issue #15:
+        /// When IConfiguration has no properties that map to TConfiguration,
+        /// Configuration must still be a valid (non-null) instance with all defaults.
+        /// </summary>
+        [Fact]
+        public void Constructor_WithIConfigurationContainingIrrelevantKeys_ConfigurationIsNotNull()
+        {
+            // Arrange – keys that do not map to any property of TestConfiguration
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "unrelated:key", "some-value" }
+                })
+                .Build();
+
+            // Act
+            var module = new TestModule(configuration);
+
+            // Assert
+            Assert.NotNull(module.Configuration);
+        }
+
+        /// <summary>
+        /// Verifies that when IConfiguration contains a value for a configuration property,
+        /// the property is correctly bound even after the null-guard fix.
+        /// </summary>
+        [Fact]
+        public void Constructor_WithIConfigurationContainingConfigValues_ConfigurationHasCorrectValues()
+        {
+            // Arrange
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "TestValue", "expectedValue" }
+                })
+                .Build();
+
+            // Act
+            var module = new TestModule(configuration);
+
+            // Assert
+            Assert.NotNull(module.Configuration);
+            Assert.Equal("expectedValue", module.Configuration.TestValue);
+        }
+
+        /// <summary>
+        /// Verifies that the null-guard does not interfere when IConfiguration contains
+        /// both the routing key and actual configuration values.
+        /// </summary>
+        [Fact]
+        public void Constructor_WithIConfigurationContainingModuleKeyAndConfigValues_ConfigurationHasCorrectValues()
+        {
+            // Arrange
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "key", "test-basemodule" },
+                    { "TestValue", "hello" }
+                })
+                .Build();
+
+            // Act
+            var module = new TestModule(configuration);
+
+            // Assert
+            Assert.NotNull(module.Configuration);
+            Assert.Equal("hello", module.Configuration.TestValue);
+        }
+
+        /// <summary>
+        /// Verifies that two modules constructed from the same empty IConfiguration both
+        /// receive independent (non-shared) default configuration instances.
+        /// </summary>
+        [Fact]
+        public void Constructor_WithEmptyIConfiguration_EachModuleGetsIndependentDefaultConfiguration()
+        {
+            // Arrange
+            var configuration = new MsConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>())
+                .Build();
+
+            // Act
+            var moduleA = new TestModule(configuration);
+            var moduleB = new TestModule(configuration);
+
+            // Assert – configurations are not the same reference
+            Assert.NotSame(moduleA.Configuration, moduleB.Configuration);
+        }
+
+        #endregion
+
         #region Module NestedModules Tests
 
         [Fact]

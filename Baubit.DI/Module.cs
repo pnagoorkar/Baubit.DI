@@ -1,4 +1,5 @@
-﻿using Baubit.Traceability;
+﻿using Baubit.Configuration;
+using Baubit.Traceability;
 using FluentResults;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -104,9 +105,19 @@ namespace Baubit.DI
         /// Initializes a new instance of the <see cref="Module{TConfiguration}"/> class from an <see cref="IConfiguration"/> section.
         /// </summary>
         /// <param name="configuration">The configuration section to bind settings from.</param>
-        protected Module(IConfiguration configuration) : this(configuration.Get<TConfiguration>(), LoadNestedModules(configuration))
+        protected Module(IConfiguration configuration) : this(BuildConfiguration(configuration), LoadNestedModules(configuration))
         {
 
+        }
+        /// <summary>
+        /// Builds an instance of the configuration type from the specified configuration source.
+        /// </summary>
+        /// <param name="configuration">The configuration source from which to bind and retrieve the configuration values.</param>
+        /// <returns>An instance of the configuration type populated from the configuration source, or a new instance with
+        /// default values if the source does not provide one.</returns>
+        private static TConfiguration BuildConfiguration(IConfiguration configuration)
+        {
+            return configuration.Get<TConfiguration>() ?? ConfigurationBuilder<TConfiguration>.CreateNew().Build().Value;
         }
 
         private static List<IModule> LoadNestedModules(IConfiguration configuration)
