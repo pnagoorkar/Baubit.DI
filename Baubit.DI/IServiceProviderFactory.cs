@@ -1,5 +1,7 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.Collections.Generic;
 
 namespace Baubit.DI
@@ -20,6 +22,14 @@ namespace Baubit.DI
         /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
         /// <returns>A result containing the configured host application builder, or failure information.</returns>
         Result<THostApplicationBuilder> UseConfiguredServiceProviderFactory<THostApplicationBuilder>(THostApplicationBuilder hostApplicationBuilder) where THostApplicationBuilder : IHostApplicationBuilder;
+
+        /// <summary>
+        /// Creates a new service provider based on the specified service collection.
+        /// </summary>
+        /// <param name="services">The collection of service descriptors to build the service provider from. If not specified, a default or
+        /// empty service collection may be used.</param>
+        /// <returns>An object that implements the IServiceProvider interface and can be used to resolve services.</returns>
+        IServiceProvider CreateServiceProvider(IServiceCollection services = default);
     }
 
     /// <summary>
