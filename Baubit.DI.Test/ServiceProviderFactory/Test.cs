@@ -81,5 +81,55 @@ namespace Baubit.DI.Test.ServiceProviderFactory
             Assert.True(result.IsSuccess);
             Assert.Same(builder, result.Value);
         }
+
+        [Fact]
+        public void CreateServiceProvider_WithNullServices_ReturnsWorkingServiceProvider()
+        {
+            // Arrange
+            var configuration = new MsConfigurationBuilder().Build();
+            var factory = new Baubit.DI.ServiceProviderFactory(configuration, []);
+
+            // Act - null default triggers the `services ?? new ServiceCollection()` branch
+            var serviceProvider = factory.CreateServiceProvider();
+
+            // Assert
+            Assert.NotNull(serviceProvider);
+        }
+
+        [Fact]
+        public void CreateServiceProvider_WithProvidedServices_IncludesPreRegisteredServices()
+        {
+            // Arrange
+            var configuration = new MsConfigurationBuilder().Build();
+            var factory = new Baubit.DI.ServiceProviderFactory(configuration, []);
+            var services = new ServiceCollection();
+            services.AddSingleton<MyComponent>();
+
+            // Act - non-null services takes the non-null branch of `services ?? new ServiceCollection()`
+            var serviceProvider = factory.CreateServiceProvider(services);
+
+            // Assert
+            Assert.NotNull(serviceProvider);
+            Assert.NotNull(serviceProvider.GetService<MyComponent>());
+        }
+
+        [Theory]
+        [InlineData("Baubit.DI.Test;ServiceProviderFactory.Setup.config.json")]
+        public void CreateServiceProvider_WithModules_CanResolveModuleServices(string configFile)
+        {
+            // Arrange
+            var configuration = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+                .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
+                .Bind(cb => cb.Build()).Value;
+
+            var factory = new Baubit.DI.ServiceProviderFactory(configuration, []);
+
+            // Act
+            var serviceProvider = factory.CreateServiceProvider();
+
+            // Assert - TestModule registers MyComponent, so it must be resolvable
+            Assert.NotNull(serviceProvider);
+            Assert.NotNull(serviceProvider.GetService<MyComponent>());
+        }
     }
 }
