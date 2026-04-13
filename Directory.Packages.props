@@ -14,7 +14,7 @@
   <!-- Define package versions only when parent doesn't exist (standalone builds) -->
   <ItemGroup Condition="'$(ParentPackagesPropsPath)' == ''">
     <!-- Production Dependencies -->
-    <PackageVersion Include="Baubit.Configuration" Version="2025.51.2" />
+    <PackageVersion Include="Baubit.Configuration" Version="2026.2.1" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
     
