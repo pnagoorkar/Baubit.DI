@@ -3,6 +3,7 @@ using FluentResults;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -108,6 +109,14 @@ namespace Baubit.DI
         {
             hostApplicationBuilder.ConfigureContainer(InternalFactory, Load);
             return hostApplicationBuilder;
+        }
+
+        ///<inheritdoc/>
+        public IServiceProvider CreateServiceProvider(IServiceCollection services = default)
+        {
+            var containerBuilder = InternalFactory.CreateBuilder(services ?? new ServiceCollection());
+            Load(containerBuilder);
+            return InternalFactory.CreateServiceProvider(containerBuilder);
         }
     }
 

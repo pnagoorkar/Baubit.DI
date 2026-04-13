@@ -5,6 +5,8 @@
   <Folder Name="/SolutionItems/">
     <File Path=".circleci/config.yml" />
     <File Path=".github/copilot-instructions.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
   </Folder>
   <Project Path="Baubit.DI.Generators/Baubit.DI.Generators.csproj" />
   <Project Path="Baubit.DI.Test/Baubit.DI.Test.csproj" />
