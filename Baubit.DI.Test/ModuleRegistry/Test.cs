@@ -139,6 +139,19 @@ namespace Baubit.DI.Test.ModuleRegistry
             Assert.True(result2);
             Assert.NotSame(module1, module2); // Different instances
         }
+
+        [Fact]
+        public void RegisterExternal_AfterFirstResolution_ThrowsInvalidOperationException()
+        {
+            // Arrange - ensure the lazy is initialized by calling TryCreate
+            var config = new ConfigurationBuilder().Build();
+            Baubit.DI.ModuleRegistry.TryCreate("testmodule", config, out _);
+
+            // Act & Assert - RegisterExternal must throw because the registry is already initialized
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => Baubit.DI.ModuleRegistry.RegisterExternal(_ => { }));
+            Assert.Contains("before any module resolution", ex.Message);
+        }
     }
 
     // Test helper classes

@@ -2,6 +2,11 @@
 
 namespace Baubit.DI
 {
+    /// <summary>
+    /// Extends <see cref="Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{TContainerBuilder}"/> with
+    /// module-based dependency injection capabilities.
+    /// </summary>
+    /// <typeparam name="TContainerBuilder">The type of container builder used by the factory.</typeparam>
     public interface IServiceProviderFactory<TContainerBuilder> : Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>
     {
         /// <summary>

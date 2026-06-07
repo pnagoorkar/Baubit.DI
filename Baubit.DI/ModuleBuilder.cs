@@ -255,20 +255,33 @@ namespace Baubit.DI
             this.moduleFactory = moduleFactory;
         }
 
-
+        /// <summary>
+        /// Creates a new <see cref="ModuleBuilder{TModule, TConfiguration}"/> instance.
+        /// </summary>
+        /// <param name="configurationBuilder">The typed configuration builder to use.</param>
+        /// <param name="moduleFactory">A factory function that creates a module from its configuration.</param>
+        /// <returns>A result containing the new builder instance.</returns>
         public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Baubit.Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, 
                                                                                Func<TConfiguration, TModule> moduleFactory)
         {
             return Result.Try(() => new ModuleBuilder<TModule, TConfiguration>(configurationBuilder, moduleFactory));
         }
 
-
+        /// <summary>
+        /// Adds configuration override handlers that are applied after the configuration is built.
+        /// </summary>
+        /// <param name="overrideHandlers">Actions that mutate the configuration after it is built.</param>
+        /// <returns>A result containing this builder for chaining.</returns>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithOverrideHandlers(params Action<TConfiguration>[] overrideHandlers)
         {
             return Result.Try(() => this.overrideHandlers.AddRange(overrideHandlers)).Bind(() => Result.Ok(this));
         }
 
-
+        /// <summary>
+        /// Adds the specified modules as nested modules of the module being built.
+        /// </summary>
+        /// <param name="modules">The modules to add as nested modules.</param>
+        /// <returns>A result containing this builder for chaining.</returns>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModules(params IModule[] modules)
         {
             return Result.Try(() => 
@@ -278,7 +291,11 @@ namespace Baubit.DI
             });
         }
 
-
+        /// <summary>
+        /// Loads and adds nested modules from the specified configuration section.
+        /// </summary>
+        /// <param name="configuration">The configuration section containing module definitions.</param>
+        /// <returns>A result containing this builder for chaining, or failure information.</returns>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModulesFrom(IConfiguration configuration)
         {
             return CreateMany(configuration)
@@ -286,7 +303,11 @@ namespace Baubit.DI
                 .Bind(modules => WithNestedModules(modules.ToArray()));
         }
 
-
+        /// <summary>
+        /// Loads and adds nested modules from all specified configuration sections.
+        /// </summary>
+        /// <param name="configurations">The configuration sections to load nested modules from.</param>
+        /// <returns>A result containing this builder for chaining, or failure information.</returns>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModulesFrom(params IConfiguration[] configurations)
         {
             return Result.Try(() =>
@@ -299,7 +320,14 @@ namespace Baubit.DI
             });
         }
 
-
+        /// <summary>
+        /// Builds the strongly-typed module instance from the configured settings.
+        /// </summary>
+        /// <returns>A result containing the built module, or failure information.</returns>
+        /// <remarks>
+        /// This method disposes the builder after building. The builder cannot be reused after calling this method.
+        /// Override handlers are applied to the configuration before the module factory is invoked.
+        /// </remarks>
         public new Result<TModule> Build()
         {
             try

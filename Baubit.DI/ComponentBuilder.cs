@@ -173,29 +173,64 @@ namespace Baubit.DI
     public static class ComponentBuilderExtensions
     {
 
+        /// <summary>
+        /// Adds a module to the component using a configuration builder and module factory.
+        /// </summary>
+        /// <typeparam name="TModule">The type of module to add.</typeparam>
+        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
+        /// <param name="result">The result containing the component builder to extend.</param>
+        /// <param name="configurationBuilder">The configuration builder to use.</param>
+        /// <param name="moduleFactory">Factory function to create the module from configuration.</param>
+        /// <returns>A result containing the component builder for chaining, or failure information.</returns>
         public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, ConfigurationBuilder<TConfiguration> configurationBuilder, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuilder, moduleFactory));
         }
 
-
+        /// <summary>
+        /// Adds a module to the component using a configuration builder action and module factory.
+        /// </summary>
+        /// <typeparam name="TModule">The type of module to add.</typeparam>
+        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
+        /// <param name="result">The result containing the component builder to extend.</param>
+        /// <param name="configurationBuildHandler">Action to configure the configuration builder.</param>
+        /// <param name="moduleFactory">Factory function to create the module from configuration.</param>
+        /// <returns>A result containing the component builder for chaining, or failure information.</returns>
         public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<ConfigurationBuilder<TConfiguration>> configurationBuildHandler, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuildHandler, moduleFactory));
         }
 
-
+        /// <summary>
+        /// Adds a module to the component using a configuration override action and module factory.
+        /// </summary>
+        /// <typeparam name="TModule">The type of module to add.</typeparam>
+        /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
+        /// <param name="result">The result containing the component builder to extend.</param>
+        /// <param name="configurationBuildHandler">Action to configure the module configuration.</param>
+        /// <param name="moduleFactory">Factory function to create the module from configuration.</param>
+        /// <returns>A result containing the component builder for chaining, or failure information.</returns>
         public static Result<ComponentBuilder> WithModule<TModule, TConfiguration>(this Result<ComponentBuilder> result, Action<TConfiguration> configurationBuildHandler, Func<TConfiguration, TModule> moduleFactory) where TModule : Module<TConfiguration> where TConfiguration : Configuration
         {
             return result.Bind(cb => cb.WithModule<TModule, TConfiguration>(configurationBuildHandler, moduleFactory));
         }
 
+        /// <summary>
+        /// Builds the component with all added modules.
+        /// </summary>
+        /// <param name="result">The result containing the component builder to build.</param>
+        /// <returns>A result containing the built component, or failure information.</returns>
         public static Result<IComponent> Build(this Result<ComponentBuilder> result)
         {
             return result.Bind(cb => cb.Build());
         }
 
-
+        /// <summary>
+        /// Adds modules from existing components to the component being built.
+        /// </summary>
+        /// <param name="result">The result containing the component builder to extend.</param>
+        /// <param name="featureFactories">Array of components whose modules should be added.</param>
+        /// <returns>A result containing the component builder for chaining, or failure information.</returns>
         public static Result<ComponentBuilder> WithModulesFrom(this Result<ComponentBuilder> result, params IComponent[] featureFactories)
         {
             return result.Bind(cb => cb.WithModulesFrom(featureFactories));

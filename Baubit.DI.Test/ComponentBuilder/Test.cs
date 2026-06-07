@@ -326,5 +326,22 @@ namespace Baubit.DI.Test.ComponentBuilder
         }
 
         #endregion
+
+        #region AComponent Dispose Without Build Tests
+
+        [Fact]
+        public void AComponent_Dispose_WithoutBuilding_DoesNotThrow()
+        {
+            // Arrange - create component but never enumerate (modules remain null)
+            var component = new TestComponent();
+
+            // Act - dispose without ever calling GetEnumerator
+            component.Dispose();
+
+            // Assert - should complete without error; the null-check on modules is exercised
+            Assert.True(true);
+        }
+
+        #endregion
     }
 }

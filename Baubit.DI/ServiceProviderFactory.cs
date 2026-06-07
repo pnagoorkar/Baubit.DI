@@ -96,6 +96,11 @@ namespace Baubit.DI
         /// </remarks>
         public abstract void Load(TContainerBuilder containerBuilder);
 
+        /// <summary>
+        /// Creates the container builder from the service collection and loads all modules into it.
+        /// </summary>
+        /// <param name="services">The service collection to initialize the container builder with.</param>
+        /// <returns>The initialized container builder with all modules loaded.</returns>
         public TContainerBuilder CreateBuilder(IServiceCollection services)
         {
             var containerBuilder = InternalFactory.CreateBuilder(services);
@@ -103,6 +108,11 @@ namespace Baubit.DI
             return containerBuilder;
         }
 
+        /// <summary>
+        /// Creates the service provider from the container builder.
+        /// </summary>
+        /// <param name="containerBuilder">The container builder to create the service provider from.</param>
+        /// <returns>The configured <see cref="System.IServiceProvider"/>.</returns>
         public IServiceProvider CreateServiceProvider(TContainerBuilder containerBuilder) => InternalFactory.CreateServiceProvider(containerBuilder);
     }
 
@@ -118,6 +128,10 @@ namespace Baubit.DI
     public class ServiceProviderFactory : ServiceProviderFactory<IServiceCollection>
     {
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class using the default factory and an empty component list.
+        /// </summary>
+        /// <param name="configuration">The configuration to load modules from.</param>
         public ServiceProviderFactory(IConfiguration configuration) : this(configuration, Array.Empty<IComponent>())
         {
 

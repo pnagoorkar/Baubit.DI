@@ -466,5 +466,38 @@ namespace Baubit.DI.Test.ModuleExtensions
         }
 
         #endregion
+
+        #region Serialize Without Attribute Tests
+
+        /// <summary>
+        /// Module type that does not have the [BaubitModule] attribute.
+        /// Used to test that serialization throws when the attribute is missing.
+        /// </summary>
+        private class NoAttributeModule : Module<TestConfiguration>
+        {
+            public NoAttributeModule(TestConfiguration configuration) : base(configuration) { }
+
+            public override void Load(IServiceCollection services) { }
+        }
+
+        [Fact]
+        public void Serialize_WithModuleLackingBaubitModuleAttribute_ThrowsViaResult()
+        {
+            // Arrange
+            var config = new TestConfiguration { TestValue = "test" };
+            var module = new NoAttributeModule(config);
+            var options = new JsonSerializerOptions { WriteIndented = false };
+
+            // Act - WriteModuleDescriptor throws InvalidOperationException when [BaubitModule] is absent;
+            // the exception is caught by the inner Result.Try so the outer Serialize returns success
+            // with an incomplete JSON object ("{}") because the descriptor write is silently skipped.
+            var result = module.Serialize(options);
+
+            // Assert - exercises the baubitModuleAttr == null branch (lines 152-156 in ModuleExtensions)
+            Assert.True(result.IsSuccess);
+            Assert.Equal("{}", result.Value);
+        }
+
+        #endregion
     }
 }

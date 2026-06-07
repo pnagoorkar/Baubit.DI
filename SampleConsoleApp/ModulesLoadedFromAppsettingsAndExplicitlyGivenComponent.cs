@@ -67,8 +67,8 @@ public static class ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent
             Args = Array.Empty<string>(),
             ContentRootPath = AppContext.BaseDirectory
         });
-        builder.UseConfiguredServiceProviderFactory(
-            componentsFactory: () => [new LoggerComponent()]
+        builder.WithServiceProviderFactory(
+            new ServiceProviderFactory(builder.Configuration, [new LoggerComponent()])
         );
         
         using var host = builder.Build();
