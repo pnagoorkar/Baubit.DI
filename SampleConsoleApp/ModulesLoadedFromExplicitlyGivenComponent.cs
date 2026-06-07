@@ -16,8 +16,9 @@ public static class ModulesLoadedFromExplicitlyGivenComponent
     public static async Task RunAsync()
     {
         // Build host with modules from code only (no appsettings.json)
-        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
-        using var host = builder.WithServiceProviderFactory(new ServiceProviderFactory(builder.Configuration, [new CodeGreetingComponent("Hello from code component!")])).Build();
+        using var host = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings())
+                             .WithDefaultServiceProviderFactory(components: [new CodeGreetingComponent("Hello from code component!")])
+                             .Build();
 
         // Verify the module was loaded from code
         var greetingService = host.Services.GetRequiredService<IGreetingService>();

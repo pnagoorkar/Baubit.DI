@@ -67,8 +67,7 @@ public static class ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent
             ContentRootPath = AppContext.BaseDirectory
         };
         // Build host with modules from BOTH appsettings.json AND code
-        var builder = Host.CreateApplicationBuilder(hostAppBuilderSettings);
-        using var host = builder.WithServiceProviderFactory(new ServiceProviderFactory(builder.Configuration, [new LoggerComponent()])).Build();
+        using var host = Host.CreateApplicationBuilder(hostAppBuilderSettings).WithDefaultServiceProviderFactory(components: [new LoggerComponent()]).Build();
 
         // IGreetingService comes from appsettings.json (GreetingModule with key "greeting")
         var greetingService = host.Services.GetRequiredService<IGreetingService>();

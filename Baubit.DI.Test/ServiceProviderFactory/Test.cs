@@ -20,10 +20,9 @@ namespace Baubit.DI.Test.ServiceProviderFactory
             var result = Baubit.Configuration.ConfigurationBuilder.CreateNew()
                 .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
                 .Bind(cb => cb.Build())
-                .Bind(cfg => Result.Try(() => new Baubit.DI.ServiceProviderFactory(cfg)))
-                .Bind(serviceProviderFactory => Result.Try(() =>
+                .Bind(cfg => Result.Try(() =>
                 {
-                    return Host.CreateApplicationBuilder().WithServiceProviderFactory(serviceProviderFactory).Build();
+                    return Host.CreateApplicationBuilder().WithDefaultServiceProviderFactory(additionalConfigurations: [cfg]).Build();
                 }));
 
             // Assert - Should succeed because test modules ARE registered via TestModuleRegistry

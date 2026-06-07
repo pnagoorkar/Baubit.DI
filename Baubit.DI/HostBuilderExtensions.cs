@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Baubit.Configuration;
+using Baubit.Traceability;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 
 namespace Baubit.DI
@@ -23,6 +27,24 @@ namespace Baubit.DI
         {
             hostBuilder.ConfigureContainer(serviceProviderFactory, configure);
             return hostBuilder;
+        }
+
+        public static THostBuilder WithDefaultServiceProviderFactory<THostBuilder>(this THostBuilder hostBuilder,
+                                                                                   IConfiguration[] additionalConfigurations = null,
+                                                                                   IComponent[] components = null,
+                                                                                   Action<IServiceCollection> configure = null) where THostBuilder : IHostApplicationBuilder
+        {
+            var cfg = default(IConfiguration);
+            if (additionalConfigurations != null)
+            {
+                cfg = Baubit.Configuration.ConfigurationBuilder.CreateNew().WithAdditionalConfigurations(additionalConfigurations).Build().ThrowIfFailed().Value;
+            }
+            else
+            {
+                cfg = hostBuilder.Configuration;
+            }
+            var serviceProviderFactory = new ServiceProviderFactory(cfg, components);
+            return hostBuilder.WithServiceProviderFactory(serviceProviderFactory, configure);
         }
     }
 }
