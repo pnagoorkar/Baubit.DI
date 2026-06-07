@@ -20,7 +20,11 @@ namespace Baubit.DI.Test.ServiceProviderFactory
             var result = Baubit.Configuration.ConfigurationBuilder.CreateNew()
                 .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
                 .Bind(cb => cb.Build())
-                .Bind(cfg => Result.Try(() => Host.CreateApplicationBuilder().UseConfiguredServiceProviderFactory(cfg).Build()));
+                .Bind(cfg => Result.Try(() => new Baubit.DI.ServiceProviderFactory(cfg)))
+                .Bind(serviceProviderFactory => Result.Try(() =>
+                {
+                    return Host.CreateApplicationBuilder().WithServiceProviderFactory(serviceProviderFactory).Build();
+                }));
 
             // Assert - Should succeed because test modules ARE registered via TestModuleRegistry
             Assert.True(result.IsSuccess);
@@ -60,29 +64,6 @@ namespace Baubit.DI.Test.ServiceProviderFactory
         }
 
         [Fact]
-        public void UseConfiguredServiceProviderFactory_ReturnsSuccessResult()
-        {
-            // Arrange
-            var configDict = new Dictionary<string, string?>
-            {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName }
-            };
-            var configuration = new MsConfigurationBuilder()
-                .AddInMemoryCollection(configDict)
-                .Build();
-
-            var factory = new Baubit.DI.ServiceProviderFactory(configuration, []);
-            var builder = Host.CreateApplicationBuilder();
-
-            // Act
-            var result = factory.UseConfiguredServiceProviderFactory(builder);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Same(builder, result.Value);
-        }
-
-        [Fact]
         public void CreateServiceProvider_WithNullServices_ReturnsWorkingServiceProvider()
         {
             // Arrange
@@ -90,7 +71,7 @@ namespace Baubit.DI.Test.ServiceProviderFactory
             var factory = new Baubit.DI.ServiceProviderFactory(configuration, []);
 
             // Act - null default triggers the `services ?? new ServiceCollection()` branch
-            var serviceProvider = factory.CreateServiceProvider();
+            var serviceProvider = factory.CreateServiceProvider(factory.CreateBuilder(new ServiceCollection()));
 
             // Assert
             Assert.NotNull(serviceProvider);
@@ -125,7 +106,7 @@ namespace Baubit.DI.Test.ServiceProviderFactory
             var factory = new Baubit.DI.ServiceProviderFactory(configuration, []);
 
             // Act
-            var serviceProvider = factory.CreateServiceProvider();
+            var serviceProvider = factory.CreateServiceProvider(factory.CreateBuilder(new ServiceCollection()));
 
             // Assert - TestModule registers MyComponent, so it must be resolvable
             Assert.NotNull(serviceProvider);
