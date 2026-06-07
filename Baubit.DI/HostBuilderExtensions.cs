@@ -29,6 +29,39 @@ namespace Baubit.DI
             return hostBuilder;
         }
 
+        /// <summary>
+        /// Configures the host builder to use the default <see cref="ServiceProviderFactory"/> with module-based dependency injection.
+        /// </summary>
+        /// <typeparam name="THostBuilder">The type of host application builder.</typeparam>
+        /// <param name="hostBuilder">The host application builder to configure.</param>
+        /// <param name="additionalConfigurations">
+        /// Optional additional <see cref="IConfiguration"/> sources to overlay on top of
+        /// <see cref="IHostApplicationBuilder.Configuration"/>.
+        /// When provided, the host builder's own configuration is merged with these sources so that
+        /// all existing host settings are preserved and the additional sources can supply or override module definitions.
+        /// When <see langword="null"/>, <see cref="IHostApplicationBuilder.Configuration"/> is used directly.
+        /// </param>
+        /// <param name="components">
+        /// Optional array of <see cref="IComponent"/> instances whose modules are loaded programmatically.
+        /// Component modules are registered before any configuration-based modules.
+        /// </param>
+        /// <param name="configure">
+        /// An optional action to perform additional configuration on the <see cref="IServiceCollection"/> after all
+        /// module services have been registered.
+        /// </param>
+        /// <returns>The same <paramref name="hostBuilder"/> instance for fluent chaining.</returns>
+        /// <remarks>
+        /// This is the recommended entry point for standard .NET dependency injection scenarios.
+        /// Use <see cref="WithServiceProviderFactory{THostBuilder, TContainerBuilder}"/> only when integrating
+        /// a custom third-party container (e.g., Autofac).
+        /// <para>
+        /// Module loading order:
+        /// <list type="number">
+        ///   <item><description>Modules from <paramref name="components"/> (if provided)</description></item>
+        ///   <item><description>Modules from the resolved configuration (merged host config + <paramref name="additionalConfigurations"/>, or host config alone)</description></item>
+        /// </list>
+        /// </para>
+        /// </remarks>
         public static THostBuilder WithDefaultServiceProviderFactory<THostBuilder>(this THostBuilder hostBuilder,
                                                                                    IConfiguration[] additionalConfigurations = null,
                                                                                    IComponent[] components = null,
@@ -37,7 +70,12 @@ namespace Baubit.DI
             var cfg = default(IConfiguration);
             if (additionalConfigurations != null)
             {
-                cfg = Baubit.Configuration.ConfigurationBuilder.CreateNew().WithAdditionalConfigurations(additionalConfigurations).Build().ThrowIfFailed().Value;
+                cfg = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+                                                               .WithAdditionalConfigurations(hostBuilder.Configuration)
+                                                               .WithAdditionalConfigurations(additionalConfigurations)
+                                                               .Build()
+                                                               .ThrowIfFailed()
+                                                               .Value;
             }
             else
             {

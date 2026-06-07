@@ -117,12 +117,11 @@ Load ALL modules from configuration. Module types, their configurations, and nes
 // Register consumer modules first (if any)
 MyModuleRegistry.Register();
 
-var builder = Host.CreateApplicationBuilder();
-
 // appsettings.json defines all modules
-builder.WithServiceProviderFactory(new ServiceProviderFactory(builder.Configuration));
-
-await builder.Build().RunAsync();
+await Host.CreateApplicationBuilder()
+          .WithDefaultServiceProviderFactory()
+          .Build()
+          .RunAsync();
 ```
 
 **appsettings.json:**
@@ -167,11 +166,10 @@ public class MyComponent : Component
 }
 
 // Load modules from component only (no appsettings.json)
-var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
-builder.WithServiceProviderFactory(
-    new ServiceProviderFactory(builder.Configuration, [new MyComponent()]));
-
-await builder.Build().RunAsync();
+await Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings())
+          .WithDefaultServiceProviderFactory(components: [new MyComponent()])
+          .Build()
+          .RunAsync();
 ```
 
 **Use when:**
@@ -190,11 +188,10 @@ Combine BOTH configuration-based and code-based module loading. This is the most
 MyModuleRegistry.Register();
 
 // Load modules from BOTH appsettings.json AND code
-var builder = Host.CreateApplicationBuilder();
-builder.WithServiceProviderFactory(
-    new ServiceProviderFactory(builder.Configuration, [new MyComponent()]));
-
-await builder.Build().RunAsync();
+await Host.CreateApplicationBuilder()
+          .WithDefaultServiceProviderFactory(components: [new MyComponent()])
+          .Build()
+          .RunAsync();
 ```
 
 **Loading order:**
@@ -350,8 +347,8 @@ Instantiate your factory and pass it to `WithServiceProviderFactory`:
 
 ```csharp
 var builder = Host.CreateApplicationBuilder();
-builder.WithServiceProviderFactory(
-    new CustomServiceProviderFactory(builder.Configuration, []));
+var spFactory = new CustomServiceProviderFactory(builder.Configuration, components: [/*optional*/]);
+builder.WithServiceProviderFactory(spFactory);
 await builder.Build().RunAsync();
 ```
 
@@ -416,9 +413,10 @@ public class MyCustomModule : Module<MyConfig>
 MyModuleRegistry.Register();
 
 // Now your modules are available in configuration
-var builder = Host.CreateApplicationBuilder();
-builder.WithServiceProviderFactory(new ServiceProviderFactory(builder.Configuration));
-await builder.Build().RunAsync();
+await Host.CreateApplicationBuilder()
+          .WithDefaultServiceProviderFactory()
+          .Build()
+          .RunAsync();
 ```
 
 **Why this is required:**
@@ -600,7 +598,8 @@ Extension methods for `IHostApplicationBuilder`.
 
 | Method | Description |
 |--------|-------------|
-| `WithServiceProviderFactory<THostBuilder, TContainerBuilder>(IServiceProviderFactory<TContainerBuilder>, Action<TContainerBuilder>)` | Configures the host builder to use the given service provider factory |
+| `WithDefaultServiceProviderFactory<THostBuilder>(IConfiguration[], IComponent[], Action<IServiceCollection>)` | Configures the host builder to use the default `ServiceProviderFactory`. Recommended for all standard .NET DI scenarios. Merges `additionalConfigurations` on top of the host's own configuration when provided. |
+| `WithServiceProviderFactory<THostBuilder, TContainerBuilder>(IServiceProviderFactory<TContainerBuilder>, Action<TContainerBuilder>)` | Configures the host builder to use a custom service provider factory. Use this only when integrating a third-party container such as Autofac. |
 
 </details>
 
