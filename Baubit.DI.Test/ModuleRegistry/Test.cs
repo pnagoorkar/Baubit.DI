@@ -155,7 +155,7 @@ namespace Baubit.DI.Test.ModuleRegistry
     }
 
     // Test helper classes
-    [BaubitModule("testmodule")]
+    [DI.BaubitModule("testmodule")]
     public class TestModule : Module<TestConfiguration>
     {
         public TestModule(IConfiguration configuration) : base(configuration) { }

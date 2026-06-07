@@ -24,7 +24,7 @@ namespace Baubit.DI.Test.ModuleExtensions
         /// <summary>
         /// Test module for unit tests.
         /// </summary>
-        [BaubitModule("test-module-ext")]
+        [DI.BaubitModule("test-module-ext")]
         public class TestModule : Module<TestConfiguration>
         {
             public TestModule(TestConfiguration configuration, List<IModule>? nestedModules = null)

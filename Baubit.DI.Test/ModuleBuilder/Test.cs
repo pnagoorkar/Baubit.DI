@@ -24,7 +24,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         /// <summary>
         /// Test module for unit tests.
         /// </summary>
-        [BaubitModule("test-modulebuilder")]
+        [DI.BaubitModule("test-modulebuilder")]
         public class TestModule : Module<TestConfiguration>
         {
             public bool LoadCalled { get; private set; }
@@ -54,7 +54,7 @@ namespace Baubit.DI.Test.ModuleBuilder
         /// <summary>
         /// Test module that provides known dependencies.
         /// </summary>
-        [BaubitModule("test-modulebuilder-deps")]
+        [DI.BaubitModule("test-modulebuilder-deps")]
         public class TestModuleWithDependencies : Module<TestConfiguration>
         {
             private readonly TestModule _dependency;
