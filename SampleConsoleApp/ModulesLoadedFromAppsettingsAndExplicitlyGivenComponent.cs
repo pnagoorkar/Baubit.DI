@@ -61,27 +61,23 @@ public static class ModulesLoadedFromAppsettingsAndExplicitlyGivenComponent
 {
     public static async Task RunAsync()
     {
-        // Build host with modules from BOTH appsettings.json AND code
-        var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+        var hostAppBuilderSettings = new HostApplicationBuilderSettings
         {
             Args = Array.Empty<string>(),
             ContentRootPath = AppContext.BaseDirectory
-        });
-        builder.UseConfiguredServiceProviderFactory(
-            componentsFactory: () => [new LoggerComponent()]
-        );
-        
-        using var host = builder.Build();
-        
+        };
+        // Build host with modules from BOTH appsettings.json AND code
+        var builder = Host.CreateApplicationBuilder(hostAppBuilderSettings);
+        using var host = builder.WithServiceProviderFactory(new ServiceProviderFactory(builder.Configuration, [new LoggerComponent()])).Build();
+
         // IGreetingService comes from appsettings.json (GreetingModule with key "greeting")
         var greetingService = host.Services.GetRequiredService<IGreetingService>();
         Console.WriteLine($"  From config: {greetingService.GetGreeting()}");
-        
+
         // ILoggerService comes from code (LoggerComponent)
         var loggerService = host.Services.GetRequiredService<ILoggerService>();
         loggerService.Log("Module from code component loaded successfully");
-        
+
         await Task.CompletedTask;
     }
 }
-

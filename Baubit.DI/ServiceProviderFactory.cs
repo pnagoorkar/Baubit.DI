@@ -96,6 +96,7 @@ namespace Baubit.DI
         /// </remarks>
         public abstract void Load(TContainerBuilder containerBuilder);
 
+        /// <inheritdoc/>
         public TContainerBuilder CreateBuilder(IServiceCollection services)
         {
             var containerBuilder = InternalFactory.CreateBuilder(services);
@@ -103,6 +104,7 @@ namespace Baubit.DI
             return containerBuilder;
         }
 
+        /// <inheritdoc/>
         public IServiceProvider CreateServiceProvider(TContainerBuilder containerBuilder) => InternalFactory.CreateServiceProvider(containerBuilder);
     }
 
@@ -118,6 +120,10 @@ namespace Baubit.DI
     public class ServiceProviderFactory : ServiceProviderFactory<IServiceCollection>
     {
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class using the default factory and an empty component list.
+        /// </summary>
+        /// <param name="configuration">The configuration to load modules from.</param>
         public ServiceProviderFactory(IConfiguration configuration) : this(configuration, Array.Empty<IComponent>())
         {
 
