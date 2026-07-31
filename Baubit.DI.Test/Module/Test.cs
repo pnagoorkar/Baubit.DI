@@ -17,7 +17,7 @@ namespace Baubit.DI.Test.Module
             public string? TestValue { get; set; }
         }
 
-        [BaubitModule("test-basemodule")]
+        [DI.BaubitModule("test-basemodule")]
         public class TestModule : Module<TestConfiguration>
         {
             public bool LoadCalled { get; private set; }
@@ -47,7 +47,7 @@ namespace Baubit.DI.Test.Module
         /// <summary>
         /// Test module that uses the default null parameter for nestedModules.
         /// </summary>
-        [BaubitModule("test-basemodule-null")]
+        [DI.BaubitModule("test-basemodule-null")]
         public class TestModuleWithNullDefault : Module<TestConfiguration>
         {
             public TestModuleWithNullDefault(TestConfiguration configuration) : base(configuration)
@@ -63,7 +63,7 @@ namespace Baubit.DI.Test.Module
             }
         }
 
-        [BaubitModule("test-basemodule-deps")]
+        [DI.BaubitModule("test-basemodule-deps")]
         public class TestModuleWithDependencies : Module<TestConfiguration>
         {
             private readonly TestModule _dependency;

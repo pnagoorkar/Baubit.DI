@@ -1,17 +1,14 @@
-using Xunit;
-
 [assembly: CollectionBehavior(DisableTestParallelization = false)]
-[assembly: TestFramework("Baubit.DI.Test.TestFramework", "Baubit.DI.Test")]
+[assembly: TestFramework(typeof(Baubit.DI.Test.TestFramework))]
 
 namespace Baubit.DI.Test
 {
     /// <summary>
     /// Custom test framework that registers test modules before any tests run.
     /// </summary>
-    public class TestFramework : Xunit.Sdk.XunitTestFramework
+    public class TestFramework : Xunit.v3.XunitTestFramework
     {
-        public TestFramework(Xunit.Abstractions.IMessageSink messageSink)
-            : base(messageSink)
+        public TestFramework()
         {
             // Register test modules with the main ModuleRegistry
             TestModuleRegistry.Register();

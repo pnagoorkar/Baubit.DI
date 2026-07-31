@@ -1,99 +1,88 @@
-﻿using Baubit.Reflection;
-using FluentResults;
+﻿using Baubit.Configuration;
+using Baubit.Traceability;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 
 namespace Baubit.DI
 {
     /// <summary>
-    /// Extension methods for configuring host application builders with module-based dependency injection.
+    /// Extension methods for <see cref="IHostApplicationBuilder"/> to configure module-based dependency injection.
     /// </summary>
     public static class HostBuilderExtensions
     {
         /// <summary>
-        /// Configuration key for specifying a custom service provider factory type.
+        /// Configures the host builder to use the specified service provider factory with module-based dependency injection.
         /// </summary>
-        public const string ServiceProviderFactoryTypeKey = "serviceProviderFactoryType";
-
-        /// <summary>
-        /// Configures the host application builder to use a service provider factory loaded from configuration.
-        /// </summary>
-        /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
-        /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
-        /// <param name="configuration">Optional additional configuration to add to the builder's configuration.</param>
-        /// <param name="componentsFactory">Optional factory function that returns pre-built components to include.</param>
-        /// <param name="onFailure">Optional callback invoked when factory creation or registration fails. Defaults to exiting the application.</param>
-        /// <returns>The configured host application builder.</returns>
-        /// <remarks>
-        /// The factory type is resolved from the configuration key "serviceProviderFactoryType".
-        /// If not specified, <see cref="ServiceProviderFactory"/> is used as the default.
-        /// </remarks>
-        public static THostApplicationBuilder UseConfiguredServiceProviderFactory<THostApplicationBuilder>(this THostApplicationBuilder hostApplicationBuilder,
-                                                                                                           IConfiguration configuration = null,
-                                                                                                           Func<IComponent[]> componentsFactory = null,
-                                                                                                           Action<THostApplicationBuilder, IResultBase> onFailure = null) where THostApplicationBuilder : IHostApplicationBuilder
+        /// <typeparam name="THostBuilder">The type of host application builder.</typeparam>
+        /// <typeparam name="TContainerBuilder">The type of container builder used by the factory.</typeparam>
+        /// <param name="hostBuilder">The host application builder to configure.</param>
+        /// <param name="serviceProviderFactory">The service provider factory to use for dependency injection.</param>
+        /// <param name="configure">An optional action to perform additional configuration on the container builder.</param>
+        /// <returns>The same <paramref name="hostBuilder"/> instance for fluent chaining.</returns>
+        public static THostBuilder WithServiceProviderFactory<THostBuilder, TContainerBuilder>(this THostBuilder hostBuilder,
+                                                                                                IServiceProviderFactory<TContainerBuilder> serviceProviderFactory,
+                                                                                                Action<TContainerBuilder> configure = null) where THostBuilder : IHostApplicationBuilder
         {
-            return hostApplicationBuilder.UseConfiguredServiceProviderFactory(configuration, componentsFactory, onFailure, null);
+            hostBuilder.ConfigureContainer(serviceProviderFactory, configure);
+            return hostBuilder;
         }
 
         /// <summary>
-        /// Configures the host application builder to use a specific service provider factory type.
+        /// Configures the host builder to use the default <see cref="ServiceProviderFactory"/> with module-based dependency injection.
         /// </summary>
-        /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
-        /// <typeparam name="TServiceProviderFactory">The type of service provider factory to use. Must implement <see cref="IServiceProviderFactory"/>.</typeparam>
-        /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
-        /// <param name="configuration">Optional additional configuration to add to the builder's configuration.</param>
-        /// <param name="componentsFactory">Optional factory function that returns pre-built components to include.</param>
-        /// <param name="onFailure">Optional callback invoked when factory creation or registration fails. Defaults to exiting the application.</param>
-        /// <returns>The configured host application builder.</returns>
+        /// <typeparam name="THostBuilder">The type of host application builder.</typeparam>
+        /// <param name="hostBuilder">The host application builder to configure.</param>
+        /// <param name="additionalConfigurations">
+        /// Optional additional <see cref="IConfiguration"/> sources to overlay on top of
+        /// <see cref="IHostApplicationBuilder.Configuration"/>.
+        /// When provided, the host builder's own configuration is merged with these sources so that
+        /// all existing host settings are preserved and the additional sources can supply or override module definitions.
+        /// When <see langword="null"/>, <see cref="IHostApplicationBuilder.Configuration"/> is used directly.
+        /// </param>
+        /// <param name="components">
+        /// Optional array of <see cref="IComponent"/> instances whose modules are loaded programmatically.
+        /// Component modules are registered before any configuration-based modules.
+        /// </param>
+        /// <param name="configure">
+        /// An optional action to perform additional configuration on the <see cref="IServiceCollection"/> after all
+        /// module services have been registered.
+        /// </param>
+        /// <returns>The same <paramref name="hostBuilder"/> instance for fluent chaining.</returns>
         /// <remarks>
-        /// This method allows specifying the service provider factory type as a generic type parameter instead of via configuration.
-        /// The specified factory type must have a constructor accepting (IConfiguration, IComponent[]) parameters.
+        /// This is the recommended entry point for standard .NET dependency injection scenarios.
+        /// Use <see cref="WithServiceProviderFactory{THostBuilder, TContainerBuilder}"/> only when integrating
+        /// a custom third-party container (e.g., Autofac).
+        /// <para>
+        /// Module loading order:
+        /// <list type="number">
+        ///   <item><description>Modules from <paramref name="components"/> (if provided)</description></item>
+        ///   <item><description>Modules from the resolved configuration (merged host config + <paramref name="additionalConfigurations"/>, or host config alone)</description></item>
+        /// </list>
+        /// </para>
         /// </remarks>
-        public static THostApplicationBuilder UseConfiguredServiceProviderFactory<THostApplicationBuilder, TServiceProviderFactory>(this THostApplicationBuilder hostApplicationBuilder,
-                                                                                                                                    IConfiguration configuration = null,
-                                                                                                                                    Func<IComponent[]> componentsFactory = null,
-                                                                                                                                    Action<THostApplicationBuilder, IResultBase> onFailure = null) where THostApplicationBuilder : IHostApplicationBuilder
+        public static THostBuilder WithDefaultServiceProviderFactory<THostBuilder>(this THostBuilder hostBuilder,
+                                                                                   IConfiguration[] additionalConfigurations = null,
+                                                                                   IComponent[] components = null,
+                                                                                   Action<IServiceCollection> configure = null) where THostBuilder : IHostApplicationBuilder
         {
-            return hostApplicationBuilder.UseConfiguredServiceProviderFactory(configuration, componentsFactory, onFailure, typeof(TServiceProviderFactory));
-        }
-
-        private static THostApplicationBuilder UseConfiguredServiceProviderFactory<THostApplicationBuilder>(this THostApplicationBuilder hostApplicationBuilder,
-                                                                                                           IConfiguration configuration = null,
-                                                                                                           Func<IComponent[]> componentsFactory = null,
-                                                                                                           Action<THostApplicationBuilder, IResultBase> onFailure = null, 
-                                                                                                           Type serviceProviderFactoryType = null) where THostApplicationBuilder : IHostApplicationBuilder
-        {
-            if (onFailure == null) onFailure = Exit;
-            if (configuration != null) hostApplicationBuilder.Configuration.AddConfiguration(configuration);
-
-            // Use the provided factory type or default to ServiceProviderFactory
-            // Note: Custom factory types from configuration are no longer supported for security reasons
-            var factoryType = serviceProviderFactoryType ?? typeof(ServiceProviderFactory);
-
-
-            var registrationResult = factoryType.CreateInstance<IServiceProviderFactory>(new Type[] { typeof(IConfiguration), typeof(IComponent[]) },
-                                                                new object[] { hostApplicationBuilder.Configuration, componentsFactory?.Invoke() }).Bind(serviceProviderFactory => serviceProviderFactory.UseConfiguredServiceProviderFactory(hostApplicationBuilder));
-
-            if (registrationResult.IsFailed)
+            var cfg = default(IConfiguration);
+            if (additionalConfigurations != null)
             {
-                onFailure(hostApplicationBuilder, registrationResult);
+                cfg = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+                                                               .WithAdditionalConfigurations(hostBuilder.Configuration)
+                                                               .WithAdditionalConfigurations(additionalConfigurations)
+                                                               .Build()
+                                                               .ThrowIfFailed()
+                                                               .Value;
             }
-
-            return hostApplicationBuilder;
-        }
-
-        /// <summary>
-        /// Default failure handler that prints the error and exits the application.
-        /// </summary>
-        /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
-        /// <param name="hostApplicationBuilder">The host application builder.</param>
-        /// <param name="result">The failed result containing error information.</param>
-        private static void Exit<THostApplicationBuilder>(THostApplicationBuilder hostApplicationBuilder,
-                                                          IResultBase result) where THostApplicationBuilder : IHostApplicationBuilder
-        {
-            Environment.Exit(-1);
+            else
+            {
+                cfg = hostBuilder.Configuration;
+            }
+            var serviceProviderFactory = new ServiceProviderFactory(cfg, components);
+            return hostBuilder.WithServiceProviderFactory(serviceProviderFactory, configure);
         }
     }
 }

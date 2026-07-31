@@ -39,7 +39,7 @@ namespace Baubit.DI
         /// The configuration builder used to construct the module configuration.
         /// </summary>
         protected Baubit.Configuration.ConfigurationBuilder configurationBuilder;
-        
+
         private bool disposedValue;
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace Baubit.DI
         /// <summary>
         /// Adds additional configuration sources from the specified configurations.
         /// </summary>
-        protected Result<TModuleBuilder> WithAdditionalConfigurationSourcesFrom<TModuleBuilder>(params IConfiguration[] configurations) 
+        protected Result<TModuleBuilder> WithAdditionalConfigurationSourcesFrom<TModuleBuilder>(params IConfiguration[] configurations)
             where TModuleBuilder : ModuleBuilder
         {
             return configurationBuilder.WithAdditionalConfigurationSourcesFrom(configurations)
@@ -131,7 +131,7 @@ namespace Baubit.DI
         /// <summary>
         /// Adds additional configurations from the specified configuration sections.
         /// </summary>
-        protected Result<TModuleBuilder> WithAdditionalConfigurationsFrom<TModuleBuilder>(params IConfiguration[] configurations) 
+        protected Result<TModuleBuilder> WithAdditionalConfigurationsFrom<TModuleBuilder>(params IConfiguration[] configurations)
             where TModuleBuilder : ModuleBuilder
         {
             return configurationBuilder.WithAdditionalConfigurationsFrom(configurations)
@@ -152,12 +152,12 @@ namespace Baubit.DI
             {
                 return FailIfDisposed().Bind(() => configurationBuilder.Build()
                                        .Bind(config =>
-                                       {                                       
+                                       {
                                            if (ModuleRegistry.TryCreate(moduleKeyValue, config, out var module))
                                            {
                                                return Result.Ok(module);
                                            }
-                                       
+
                                            return Result.Fail<IModule>($"Unknown module key '{moduleKeyValue}'. Ensure the module is annotated with [BaubitModule(\"{moduleKeyValue}\")] attribute.");
                                        }));
             }
@@ -192,8 +192,8 @@ namespace Baubit.DI
         private static Result<IConfigurationSection> GetModulesSection(IConfiguration configuration)
         {
             var section = configuration.GetSection(ModulesSectionKey);
-            return section.Exists() 
-                ? Result.Ok(section) 
+            return section.Exists()
+                ? Result.Ok(section)
                 : Result.Fail(Enumerable.Empty<IError>()).WithReason(new ModulesNotDefined());
         }
 
@@ -242,8 +242,8 @@ namespace Baubit.DI
     /// </summary>
     /// <typeparam name="TModule">The type of module to build.</typeparam>
     /// <typeparam name="TConfiguration">The type of configuration for the module.</typeparam>
-    public sealed class ModuleBuilder<TModule, TConfiguration> : ModuleBuilder 
-        where TModule : Module<TConfiguration> 
+    public sealed class ModuleBuilder<TModule, TConfiguration> : ModuleBuilder
+        where TModule : Module<TConfiguration>
         where TConfiguration : Configuration
     {
         private Func<TConfiguration, TModule> moduleFactory = null;
@@ -255,30 +255,47 @@ namespace Baubit.DI
             this.moduleFactory = moduleFactory;
         }
 
-
-        public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Baubit.Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder, 
+        /// <summary>
+        /// Creates a new <see cref="ModuleBuilder{TModule, TConfiguration}"/> instance.
+        /// </summary>
+        /// <param name="configurationBuilder">The typed configuration builder to use.</param>
+        /// <param name="moduleFactory">A factory function that creates a module from its configuration.</param>
+        /// <returns>A result containing the new builder instance.</returns>
+        public static Result<ModuleBuilder<TModule, TConfiguration>> CreateNew(Baubit.Configuration.ConfigurationBuilder<TConfiguration> configurationBuilder,
                                                                                Func<TConfiguration, TModule> moduleFactory)
         {
             return Result.Try(() => new ModuleBuilder<TModule, TConfiguration>(configurationBuilder, moduleFactory));
         }
 
-
+        /// <summary>
+        /// Adds configuration override handlers that are applied after the configuration is built.
+        /// </summary>
+        /// <param name="overrideHandlers">Actions that mutate the configuration after it is built.</param>
+        /// <returns>A result containing this builder for chaining.</returns>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithOverrideHandlers(params Action<TConfiguration>[] overrideHandlers)
         {
             return Result.Try(() => this.overrideHandlers.AddRange(overrideHandlers)).Bind(() => Result.Ok(this));
         }
 
-
+        /// <summary>
+        /// Adds the specified modules as nested modules of the module being built.
+        /// </summary>
+        /// <param name="modules">The modules to add as nested modules.</param>
+        /// <returns>A result containing this builder for chaining.</returns>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModules(params IModule[] modules)
         {
-            return Result.Try(() => 
-            { 
-                nestedModules.AddRange(modules); 
-                return this; 
+            return Result.Try(() =>
+            {
+                nestedModules.AddRange(modules);
+                return this;
             });
         }
 
-
+        /// <summary>
+        /// Loads and adds nested modules from the specified configuration section.
+        /// </summary>
+        /// <param name="configuration">The configuration section containing module definitions.</param>
+        /// <returns>A result containing this builder for chaining, or failure information.</returns>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModulesFrom(IConfiguration configuration)
         {
             return CreateMany(configuration)
@@ -286,7 +303,11 @@ namespace Baubit.DI
                 .Bind(modules => WithNestedModules(modules.ToArray()));
         }
 
-
+        /// <summary>
+        /// Loads and adds nested modules from all specified configuration sections.
+        /// </summary>
+        /// <param name="configurations">The configuration sections to load nested modules from.</param>
+        /// <returns>A result containing this builder for chaining, or failure information.</returns>
         public Result<ModuleBuilder<TModule, TConfiguration>> WithNestedModulesFrom(params IConfiguration[] configurations)
         {
             return Result.Try(() =>
@@ -299,7 +320,14 @@ namespace Baubit.DI
             });
         }
 
-
+        /// <summary>
+        /// Builds the strongly-typed module instance from the configured settings.
+        /// </summary>
+        /// <returns>A result containing the built module, or failure information.</returns>
+        /// <remarks>
+        /// This method disposes the builder after building. The builder cannot be reused after calling this method.
+        /// Override handlers are applied to the configuration before the module factory is invoked.
+        /// </remarks>
         public new Result<TModule> Build()
         {
             try
@@ -316,9 +344,9 @@ namespace Baubit.DI
 
         private Result<TConfiguration> CallOverrideHandlers(TConfiguration configuration)
         {
-            return Result.Try(() => 
+            return Result.Try(() =>
             {
-                foreach(var overrideHandler in overrideHandlers)
+                foreach (var overrideHandler in overrideHandlers)
                 {
                     overrideHandler?.Invoke(configuration);
                 }

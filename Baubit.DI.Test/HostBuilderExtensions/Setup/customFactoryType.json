@@ -1,8 +1,0 @@
-{
-  "serviceProviderFactoryType": "Baubit.DI.Test.HostBuilderExtensions.Setup.CustomServiceProviderFactory, Baubit.DI.Test",
-  "modules": [
-    {
-      "key": "Baubit.DI.Test.HostBuilderExtensions.Setup.TestModule, Baubit.DI.Test"
-    }
-  ]
-}

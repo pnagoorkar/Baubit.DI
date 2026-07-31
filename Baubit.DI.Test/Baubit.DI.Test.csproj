@@ -5,29 +5,24 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Module\Setup\config.json" />
     <None Remove="ServiceProviderFactory\Setup\config.json" />
-    <None Remove="HostBuilderExtensions\Setup\config.json" />
-    <None Remove="HostBuilderExtensions\Setup\invalidFactoryType.json" />
-    <None Remove="HostBuilderExtensions\Setup\customFactoryType.json" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Module\Setup\config.json" />
     <EmbeddedResource Include="ServiceProviderFactory\Setup\config.json" />
-    <EmbeddedResource Include="HostBuilderExtensions\Setup\config.json" />
-    <EmbeddedResource Include="HostBuilderExtensions\Setup\invalidFactoryType.json" />
-    <EmbeddedResource Include="HostBuilderExtensions\Setup\customFactoryType.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector"/>
-    <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-    <PackageReference Include="xunit"/>
-    <PackageReference Include="xunit.runner.visualstudio"/>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
   <ItemGroup>
