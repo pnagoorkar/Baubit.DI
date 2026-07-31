@@ -119,7 +119,7 @@ MyModuleRegistry.Register();
 
 // appsettings.json defines all modules
 await Host.CreateApplicationBuilder()
-          .UseConfiguredServiceProviderFactory()
+          .WithDefaultServiceProviderFactory()
           .Build()
           .RunAsync();
 ```
@@ -161,13 +161,13 @@ public class MyComponent : Component
         return builder.WithModule<MyModule, MyModuleConfiguration>(cfg =>
         {
             cfg.ConnectionString = "Server=localhost;Database=mydb";
-        });
+        }, cfg => new MyModule(cfg));
     }
 }
 
 // Load modules from component only (no appsettings.json)
 await Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings())
-          .UseConfiguredServiceProviderFactory(componentsFactory: () => [new MyComponent()])
+          .WithDefaultServiceProviderFactory(components: [new MyComponent()])
           .Build()
           .RunAsync();
 ```
@@ -189,13 +189,13 @@ MyModuleRegistry.Register();
 
 // Load modules from BOTH appsettings.json AND code
 await Host.CreateApplicationBuilder()
-          .UseConfiguredServiceProviderFactory(componentsFactory: () => [new MyComponent()])
+          .WithDefaultServiceProviderFactory(components: [new MyComponent()])
           .Build()
           .RunAsync();
 ```
 
 **Loading order:**
-1. Components from `componentsFactory` are loaded first
+1. Components from `components` array are loaded first
 2. Modules from appsettings.json `modules` section are loaded second
 
 **Use when:**
@@ -343,19 +343,18 @@ The module system supports recursive loading - modules can contain nested module
 Baubit.DI uses `ServiceProviderFactory` by default, which works with the standard .NET `IServiceCollection`. You can provide custom factory implementations for integration with third-party DI containers.
 See [Baubit.DI.Autofac](https://github.com/pnagoorkar/Baubit.DI.Autofac) for reference.
 
-### Via Generic Type Parameter
+Instantiate your factory and pass it to `WithServiceProviderFactory`:
 
 ```csharp
-await Host.CreateApplicationBuilder()
-          .UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>()
-          .Build()
-          .RunAsync();
+var builder = Host.CreateApplicationBuilder();
+var spFactory = new CustomServiceProviderFactory(builder.Configuration, components: [/*optional*/]);
+builder.WithServiceProviderFactory(spFactory);
+await builder.Build().RunAsync();
 ```
 
 **Custom factory requirements:**
-- Must implement `IServiceProviderFactory` or `IServiceProviderFactory<TContainerBuilder>`
-- Must have a constructor accepting `(IConfiguration configuration, IComponent[] components)`
-- Must derive from `ServiceProviderFactory<TContainerBuilder>` for container integration
+- Must derive from `ServiceProviderFactory<TContainerBuilder>`
+- Must pass an inner `IServiceProviderFactory<TContainerBuilder>` to the base constructor
 
 ---
 
@@ -415,7 +414,7 @@ MyModuleRegistry.Register();
 
 // Now your modules are available in configuration
 await Host.CreateApplicationBuilder()
-          .UseConfiguredServiceProviderFactory()
+          .WithDefaultServiceProviderFactory()
           .Build()
           .RunAsync();
 ```
@@ -424,7 +423,7 @@ await Host.CreateApplicationBuilder()
 - The main `Baubit.DI.ModuleRegistry` only knows about modules in the Baubit.DI assembly
 - Consumer assemblies must explicitly register their modules with `ModuleRegistry.RegisterExternal()`
 - The generated `Register()` method does this automatically
-- Registration must happen before `UseConfiguredServiceProviderFactory()` initializes the registry
+- Registration must happen before `ServiceProviderFactory` is constructed, which initializes the registry
 
 **Configuration:**
 ```json
@@ -599,19 +598,18 @@ Extension methods for `IHostApplicationBuilder`.
 
 | Method | Description |
 |--------|-------------|
-| `UseConfiguredServiceProviderFactory(IConfiguration, Func<IComponent[]>, Action<T,IResultBase>)` | Configure host with module-based DI using factory type from configuration or default |
-| `UseConfiguredServiceProviderFactory<THostApplicationBuilder, TServiceProviderFactory>(IConfiguration, Func<IComponent[]>, Action<T,IResultBase>)` | Configure host with module-based DI using specified factory type |
+| `WithDefaultServiceProviderFactory<THostBuilder>(IConfiguration[], IComponent[], Action<IServiceCollection>)` | Configures the host builder to use the default `ServiceProviderFactory`. Recommended for all standard .NET DI scenarios. Merges `additionalConfigurations` on top of the host's own configuration when provided. |
+| `WithServiceProviderFactory<THostBuilder, TContainerBuilder>(IServiceProviderFactory<TContainerBuilder>, Action<TContainerBuilder>)` | Configures the host builder to use a custom service provider factory. Use this only when integrating a third-party container such as Autofac. |
 
 </details>
 
 <details>
 <summary><strong>IServiceProviderFactory / IServiceProviderFactory&lt;TContainerBuilder&gt;</strong></summary>
 
-Interface for service provider factories that can be configured via host application builders.
+Interface for service provider factories with module-based dependency injection.
 
 | Member | Description |
 |--------|-------------|
-| `UseConfiguredServiceProviderFactory<THostApplicationBuilder>(IHostApplicationBuilder)` | Configure host builder with this factory |
 | `InternalFactory` | The internal factory wrapped by this instance (generic version only) |
 | `Modules` | Collection of loaded modules (generic version only) |
 | `Load(TContainerBuilder)` | Load modules into container (generic version only) |
@@ -635,7 +633,8 @@ Abstract base class for service provider factories that integrate module-based d
 | Method | Description |
 |--------|-------------|
 | `Load(TContainerBuilder)` | Abstract method to load modules into the container builder |
-| `UseConfiguredServiceProviderFactory<THostApplicationBuilder>(IHostApplicationBuilder)` | Configure host builder with this factory |
+| `CreateBuilder(IServiceCollection)` | Creates the container builder and loads all modules into it |
+| `CreateServiceProvider(TContainerBuilder)` | Creates the service provider from the container builder |
 
 </details>
 
@@ -646,8 +645,8 @@ Default service provider factory that uses `IServiceCollection` for dependency i
 
 | Constructor | Description |
 |-------------|-------------|
+| `ServiceProviderFactory(IConfiguration)` | Create with configuration and no components |
 | `ServiceProviderFactory(IConfiguration, IComponent[])` | Create with configuration and components |
-| `ServiceProviderFactory(DefaultServiceProviderFactory, IConfiguration, IComponent[])` | Create with specific default factory, configuration, and components |
 
 | Method | Description |
 |--------|-------------|

@@ -1,46 +1,13 @@
-﻿using FluentResults;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Baubit.DI
 {
     /// <summary>
-    /// Interface for service provider factories that can be configured via host application builders.
-    /// </summary>
-    /// <remarks>
-    /// Implementations of this interface provide a way to configure the service provider
-    /// using modules loaded from configuration.
-    /// </remarks>
-    public interface IServiceProviderFactory
-    {
-        /// <summary>
-        /// Configures the host application builder to use this service provider factory.
-        /// </summary>
-        /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
-        /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
-        /// <returns>A result containing the configured host application builder, or failure information.</returns>
-        Result<THostApplicationBuilder> UseConfiguredServiceProviderFactory<THostApplicationBuilder>(THostApplicationBuilder hostApplicationBuilder) where THostApplicationBuilder : IHostApplicationBuilder;
-
-        /// <summary>
-        /// Creates a new service provider based on the specified service collection.
-        /// </summary>
-        /// <param name="services">The collection of service descriptors to build the service provider from. If not specified, a default or
-        /// empty service collection may be used.</param>
-        /// <returns>An object that implements the IServiceProvider interface and can be used to resolve services.</returns>
-        IServiceProvider CreateServiceProvider(IServiceCollection services = default);
-    }
-
-    /// <summary>
-    /// Generic interface for service provider factories that integrate module-based dependency injection with custom container builders.
+    /// Extends <see cref="Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{TContainerBuilder}"/> with
+    /// module-based dependency injection capabilities.
     /// </summary>
     /// <typeparam name="TContainerBuilder">The type of container builder used by the factory.</typeparam>
-    /// <remarks>
-    /// This interface extends <see cref="IServiceProviderFactory"/> to provide access to the internal factory,
-    /// loaded modules, and a method to load modules into the container builder.
-    /// </remarks>
-    public interface IServiceProviderFactory<TContainerBuilder> : IServiceProviderFactory
+    public interface IServiceProviderFactory<TContainerBuilder> : Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>
     {
         /// <summary>
         /// Gets the internal service provider factory that is wrapped by this instance.

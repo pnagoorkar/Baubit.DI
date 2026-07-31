@@ -6,7 +6,7 @@ namespace Baubit.DI.Test.ServiceProviderFactory.Setup
     /// <summary>
     /// Test module for unit tests.
     /// </summary>
-    [BaubitModule("test-serviceprovider")]
+    [DI.BaubitModule("test-serviceprovider")]
     public class TestModule : Module<TestConfiguration>
     {
         public TestModule(TestConfiguration configuration, List<IModule> nestedModules) : base(configuration, nestedModules)

@@ -1,9 +1,8 @@
-﻿using Baubit.DI.Test.HostBuilderExtensions.Setup;
+using Baubit.DI.Test.ServiceProviderFactory.Setup;
 using FluentResults;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MsConfigurationBuilder = Microsoft.Extensions.Configuration.ConfigurationBuilder;
 
 namespace Baubit.DI.Test.HostBuilderExtensions
 {
@@ -12,157 +11,213 @@ namespace Baubit.DI.Test.HostBuilderExtensions
     /// </summary>
     public class Test
     {
-        // This test does not make sense. Fix/Remove it.
-        //[Theory]
-        //[InlineData("Baubit.DI.Test;HostBuilderExtensions.Setup.config.json")]
-        //public void UseConfiguredServiceProviderFactory_WithValidConfig_FailsOnUnknownModuleKey(string configFile)
-        //{
-        //    // Arrange & Act - Config references test-hostbuilder which isn't in secure registry
-        //    var result = Baubit.Configuration.ConfigurationBuilder.CreateNew()
-        //        .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
-        //        .Bind(cb => cb.Build())
-        //        .Bind(cfg => Result.Try(() => Host.CreateApplicationBuilder().UseConfiguredServiceProviderFactory(cfg).Build()));
-
-        //    // Assert - Should fail because test modules aren't in the secure ModuleRegistry
-        //    Assert.True(result.IsFailed);
-        //    Assert.Contains("Unknown module key", result.Errors[0].Message);
-        //}
+        // ---------------------------------------------------------------
+        // WithDefaultServiceProviderFactory — no arguments
+        // ---------------------------------------------------------------
 
         [Fact]
-        public void UseConfiguredServiceProviderFactory_WithCustomFactoryTypeParameter_UsesCustomFactory()
+        public void WithDefaultServiceProviderFactory_WithNoArguments_ReturnsSameBuilderInstance()
         {
-            // Arrange
-            CustomServiceProviderFactory.Reset();
-            var configuration = new ConfigurationBuilder().Build();
-
-            // Act - Pass custom factory type via generic parameter
             var builder = Host.CreateApplicationBuilder();
-            builder.UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>(configuration);
-            var result = Result.Try(() => builder.Build());
 
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.True(CustomServiceProviderFactory.WasCreated);
+            var returned = builder.WithDefaultServiceProviderFactory();
+
+            Assert.Same(builder, returned);
         }
 
         [Fact]
-        public void UseConfiguredServiceProviderFactory_WithoutFactoryTypeParameter_UsesDefaultFactory()
+        public void WithDefaultServiceProviderFactory_WithNoArguments_BuildsSuccessfully()
         {
-            // Arrange
-            var configuration = new ConfigurationBuilder().Build();
+            var host = Host.CreateApplicationBuilder()
+                           .WithDefaultServiceProviderFactory()
+                           .Build();
 
-            // Act - No factory type parameter provided, should use default
-            var builder = Host.CreateApplicationBuilder();
-            builder.UseConfiguredServiceProviderFactory(configuration);
-            var result = Result.Try(() => builder.Build());
-
-            // Assert - Should succeed with default factory
-            Assert.True(result.IsSuccess);
+            Assert.NotNull(host);
         }
 
         [Fact]
-        public void UseConfiguredServiceProviderFactory_WithNoConfiguration_UsesDefaultFactory()
+        public void WithDefaultServiceProviderFactory_WithNoArguments_ServiceProviderIsUsable()
         {
-            // Arrange & Act
-            var builder = Host.CreateApplicationBuilder();
-            var result = builder.UseConfiguredServiceProviderFactory();
+            var host = Host.CreateApplicationBuilder()
+                           .WithDefaultServiceProviderFactory()
+                           .Build();
 
-            // Assert - Should not throw and return the same builder
-            Assert.Same(builder, result);
+            Assert.NotNull(host.Services.GetService<IHostApplicationLifetime>());
         }
 
-        [Fact]
-        public void UseConfiguredServiceProviderFactory_WithNullOnFailure_UsesDefaultHandler()
+        // ---------------------------------------------------------------
+        // WithDefaultServiceProviderFactory — additionalConfigurations
+        // ---------------------------------------------------------------
+
+        [Theory]
+        [InlineData("Baubit.DI.Test;ServiceProviderFactory.Setup.config.json")]
+        public void WithDefaultServiceProviderFactory_WithAdditionalConfig_ReturnsSameBuilderInstance(string configFile)
         {
-            // Arrange
-            var configDict = new Dictionary<string, string?>
-            {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName }
-            };
-            var configuration = new MsConfigurationBuilder()
-                .AddInMemoryCollection(configDict)
-                .Build();
+            var cfg = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+                .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
+                .Bind(cb => cb.Build()).Value;
 
-            // Act
             var builder = Host.CreateApplicationBuilder();
-            var result = builder.UseConfiguredServiceProviderFactory(configuration, null);
 
-            // Assert - Should not throw and return the builder
-            Assert.Same(builder, result);
+            var returned = builder.WithDefaultServiceProviderFactory(additionalConfigurations: [cfg]);
+
+            Assert.Same(builder, returned);
         }
 
         [Theory]
-        [InlineData("Baubit.DI.Test;HostBuilderExtensions.Setup.config.json")]
-        public void UseConfiguredServiceProviderFactory_WithGenericFactoryType_UsesSpecifiedFactory(string configFile)
+        [InlineData("Baubit.DI.Test;ServiceProviderFactory.Setup.config.json")]
+        public void WithDefaultServiceProviderFactory_WithAdditionalConfig_LoadsModulesFromConfig(string configFile)
         {
-            // Arrange
-            CustomServiceProviderFactory.Reset();
-
-            // Act
             var result = Baubit.Configuration.ConfigurationBuilder.CreateNew()
                 .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
                 .Bind(cb => cb.Build())
                 .Bind(cfg => Result.Try(() =>
-                {
-                    var builder = Host.CreateApplicationBuilder();
-                    builder.UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>(cfg);
-                    return builder.Build();
-                }));
+                    Host.CreateApplicationBuilder()
+                        .WithDefaultServiceProviderFactory(additionalConfigurations: [cfg])
+                        .Build()));
 
-            // Assert
             Assert.True(result.IsSuccess);
-            Assert.True(CustomServiceProviderFactory.WasCreated);
-            Assert.NotNull(result.Value);
+            Assert.NotNull(result.Value.Services.GetService<MyComponent>());
         }
 
         [Fact]
-        public void UseConfiguredServiceProviderFactory_WithGenericFactoryType_IgnoresConfiguredFactoryType()
+        public void WithDefaultServiceProviderFactory_WithNullAdditionalConfigurations_FallsBackToHostConfig()
         {
-            // Arrange
-            CustomServiceProviderFactory.Reset();
-            var configDict = new Dictionary<string, string?>
-            {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName },
-                { "serviceProviderFactoryType", "SomeOtherFactory" } // This should be ignored
-            };
-            var configuration = new MsConfigurationBuilder()
-                .AddInMemoryCollection(configDict)
-                .Build();
+            var host = Host.CreateApplicationBuilder()
+                           .WithDefaultServiceProviderFactory(additionalConfigurations: null)
+                           .Build();
 
-            // Act
-            var builder = Host.CreateApplicationBuilder();
-            var result = builder.UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>(configuration);
+            Assert.NotNull(host);
+        }
 
-            // Assert - Should use the generic type parameter and not fail due to invalid config type
-            Assert.Same(builder, result);
-            Assert.True(CustomServiceProviderFactory.WasCreated);
+        // ---------------------------------------------------------------
+        // WithDefaultServiceProviderFactory — components
+        // ---------------------------------------------------------------
+
+        [Fact]
+        public void WithDefaultServiceProviderFactory_WithComponent_LoadsModulesFromComponent()
+        {
+            var componentResult = Baubit.DI.ComponentBuilder.CreateNew()
+                .Bind(b => b.WithModule<TestModule, TestConfiguration>(
+                    (Action<TestConfiguration>)(c => { }),
+                    c => new TestModule(c, null)))
+                .Bind(b => b.Build());
+
+            Assert.True(componentResult.IsSuccess);
+
+            using var component = componentResult.Value;
+
+            var host = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings())
+                           .WithDefaultServiceProviderFactory(components: [component])
+                           .Build();
+
+            Assert.NotNull(host.Services.GetService<MyComponent>());
         }
 
         [Fact]
-        public void UseConfiguredServiceProviderFactory_WithGenericFactoryTypeAndComponents_LoadsModulesFromBoth()
+        public void WithDefaultServiceProviderFactory_WithEmptyComponentsArray_BuildsSuccessfully()
         {
-            // Arrange
-            CustomServiceProviderFactory.Reset();
-            var configDict = new Dictionary<string, string?>
-            {
-                { "modules:0:type", typeof(TestModule).AssemblyQualifiedName }
-            };
-            var configuration = new MsConfigurationBuilder()
-                .AddInMemoryCollection(configDict)
-                .Build();
+            var host = Host.CreateApplicationBuilder()
+                           .WithDefaultServiceProviderFactory(components: [])
+                           .Build();
 
-            IComponent[] ComponentsFactory() => new IComponent[] { new ComponentBuilder.Setup.TestComponent() };
+            Assert.NotNull(host);
+        }
 
-            // Act
+        [Fact]
+        public void WithDefaultServiceProviderFactory_WithNullComponents_BuildsSuccessfully()
+        {
+            var host = Host.CreateApplicationBuilder()
+                           .WithDefaultServiceProviderFactory(components: null)
+                           .Build();
+
+            Assert.NotNull(host);
+        }
+
+        // ---------------------------------------------------------------
+        // WithDefaultServiceProviderFactory — configure action
+        // ---------------------------------------------------------------
+
+        [Fact]
+        public void WithDefaultServiceProviderFactory_WithConfigureAction_RegistrationIsApplied()
+        {
+            var host = Host.CreateApplicationBuilder()
+                           .WithDefaultServiceProviderFactory(configure: services =>
+                               services.AddSingleton<MyComponent>())
+                           .Build();
+
+            Assert.NotNull(host.Services.GetService<MyComponent>());
+        }
+
+        [Fact]
+        public void WithDefaultServiceProviderFactory_WithNullConfigureAction_BuildsSuccessfully()
+        {
+            var host = Host.CreateApplicationBuilder()
+                           .WithDefaultServiceProviderFactory(configure: null)
+                           .Build();
+
+            Assert.NotNull(host);
+        }
+
+        // ---------------------------------------------------------------
+        // WithDefaultServiceProviderFactory — hybrid (config + component)
+        // ---------------------------------------------------------------
+
+        [Theory]
+        [InlineData("Baubit.DI.Test;ServiceProviderFactory.Setup.config.json")]
+        public void WithDefaultServiceProviderFactory_HybridConfigAndComponent_LoadsBothSources(string configFile)
+        {
+            var cfg = Baubit.Configuration.ConfigurationBuilder.CreateNew()
+                .Bind(cb => cb.WithEmbeddedJsonResources(configFile))
+                .Bind(cb => cb.Build()).Value;
+
+            var componentResult = Baubit.DI.ComponentBuilder.CreateNew()
+                .Bind(b => b.WithModule<TestModule, TestConfiguration>(
+                    (Action<TestConfiguration>)(c => { }),
+                    c => new TestModule(c, null)))
+                .Bind(b => b.Build());
+
+            Assert.True(componentResult.IsSuccess);
+
+            using var component = componentResult.Value;
+
+            var host = Host.CreateApplicationBuilder()
+                           .WithDefaultServiceProviderFactory(
+                               additionalConfigurations: [cfg],
+                               components: [component])
+                           .Build();
+
+            Assert.NotNull(host.Services.GetService<MyComponent>());
+        }
+
+        // ---------------------------------------------------------------
+        // WithServiceProviderFactory — existing behaviour preserved
+        // ---------------------------------------------------------------
+
+        [Fact]
+        public void WithServiceProviderFactory_WithDefaultFactory_ReturnsSameBuilderInstance()
+        {
             var builder = Host.CreateApplicationBuilder();
-            builder.UseConfiguredServiceProviderFactory<HostApplicationBuilder, CustomServiceProviderFactory>(
-                configuration, 
-                ComponentsFactory);
-            var result = builder.Build();
+            var factory = new DI.ServiceProviderFactory(
+                new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
 
-            // Assert
-            Assert.NotNull(result);
-            Assert.True(CustomServiceProviderFactory.WasCreated);
+            var returned = builder.WithServiceProviderFactory(factory);
+
+            Assert.Same(builder, returned);
+        }
+
+        [Fact]
+        public void WithServiceProviderFactory_WithConfigureAction_RegistrationIsApplied()
+        {
+            var factory = new DI.ServiceProviderFactory(
+                new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
+
+            var host = Host.CreateApplicationBuilder()
+                           .WithServiceProviderFactory(factory, services =>
+                               services.AddSingleton<MyComponent>())
+                           .Build();
+
+            Assert.NotNull(host.Services.GetService<MyComponent>());
         }
     }
 }

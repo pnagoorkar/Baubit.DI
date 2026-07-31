@@ -16,18 +16,14 @@ public static class ModulesLoadedFromExplicitlyGivenComponent
     public static async Task RunAsync()
     {
         // Build host with modules from code only (no appsettings.json)
-        var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
-        builder.UseConfiguredServiceProviderFactory(
-            componentsFactory: () => [new CodeGreetingComponent("Hello from code component!")]
-        );
-        
-        using var host = builder.Build();
-        
+        using var host = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings())
+                             .WithDefaultServiceProviderFactory(components: [new CodeGreetingComponent("Hello from code component!")])
+                             .Build();
+
         // Verify the module was loaded from code
         var greetingService = host.Services.GetRequiredService<IGreetingService>();
         Console.WriteLine($"  {greetingService.GetGreeting()}");
-        
+
         await Task.CompletedTask;
     }
 }
-

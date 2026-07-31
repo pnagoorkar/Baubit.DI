@@ -19,10 +19,10 @@ namespace Baubit.DI.Test.ModuleRegistry
         {
             // Arrange
             var config = new ConfigurationBuilder().Build();
-            
+
             // Act
             var result = Baubit.DI.ModuleRegistry.TryCreate("testmodule", config, out var module);
-            
+
             // Assert
             Assert.True(result);
             Assert.NotNull(module);
@@ -33,10 +33,10 @@ namespace Baubit.DI.Test.ModuleRegistry
         {
             // Arrange
             var config = new ConfigurationBuilder().Build();
-            
+
             // Act
             var result = Baubit.DI.ModuleRegistry.TryCreate("unknown-module", config, out var module);
-            
+
             // Assert
             Assert.False(result);
             Assert.Null(module);
@@ -47,10 +47,10 @@ namespace Baubit.DI.Test.ModuleRegistry
         {
             // Arrange
             var config = new ConfigurationBuilder().Build();
-            
+
             // Act
             var result = Baubit.DI.ModuleRegistry.TryCreate(null!, config, out var module);
-            
+
             // Assert
             Assert.False(result);
             Assert.Null(module);
@@ -61,10 +61,10 @@ namespace Baubit.DI.Test.ModuleRegistry
         {
             // Arrange
             var config = new ConfigurationBuilder().Build();
-            
+
             // Act
             var result = Baubit.DI.ModuleRegistry.TryCreate("", config, out var module);
-            
+
             // Assert
             Assert.False(result);
             Assert.Null(module);
@@ -75,10 +75,10 @@ namespace Baubit.DI.Test.ModuleRegistry
         {
             // Arrange
             var config = new ConfigurationBuilder().Build();
-            
+
             // Act
             var result = Baubit.DI.ModuleRegistry.TryCreate("   ", config, out var module);
-            
+
             // Assert
             Assert.False(result);
             Assert.Null(module);
@@ -89,12 +89,12 @@ namespace Baubit.DI.Test.ModuleRegistry
         {
             // Arrange
             var config = new ConfigurationBuilder().Build();
-            
+
             // Act
             var result1 = Baubit.DI.ModuleRegistry.TryCreate("testmodule", config, out var module1);
             var result2 = Baubit.DI.ModuleRegistry.TryCreate("TESTMODULE", config, out var module2);
             var result3 = Baubit.DI.ModuleRegistry.TryCreate("TestModule", config, out var module3);
-            
+
             // Assert
             Assert.True(result1);
             Assert.True(result2);
@@ -114,10 +114,10 @@ namespace Baubit.DI.Test.ModuleRegistry
                     ["testKey"] = "testValue"
                 })
                 .Build();
-            
+
             // Act
             var result = Baubit.DI.ModuleRegistry.TryCreate("testmodule", config, out var module);
-            
+
             // Assert
             Assert.True(result);
             Assert.NotNull(module);
@@ -129,20 +129,33 @@ namespace Baubit.DI.Test.ModuleRegistry
         {
             // Arrange
             var config = new ConfigurationBuilder().Build();
-            
+
             // Act
             var result1 = Baubit.DI.ModuleRegistry.TryCreate("testmodule", config, out var module1);
             var result2 = Baubit.DI.ModuleRegistry.TryCreate("testmodule", config, out var module2);
-            
+
             // Assert
             Assert.True(result1);
             Assert.True(result2);
             Assert.NotSame(module1, module2); // Different instances
         }
+
+        [Fact]
+        public void RegisterExternal_AfterFirstResolution_ThrowsInvalidOperationException()
+        {
+            // Arrange - ensure the lazy is initialized by calling TryCreate
+            var config = new ConfigurationBuilder().Build();
+            Baubit.DI.ModuleRegistry.TryCreate("testmodule", config, out _);
+
+            // Act & Assert - RegisterExternal must throw because the registry is already initialized
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => Baubit.DI.ModuleRegistry.RegisterExternal(_ => { }));
+            Assert.Contains("before any module resolution", ex.Message);
+        }
     }
 
     // Test helper classes
-    [BaubitModule("testmodule")]
+    [DI.BaubitModule("testmodule")]
     public class TestModule : Module<TestConfiguration>
     {
         public TestModule(IConfiguration configuration) : base(configuration) { }
@@ -152,4 +165,3 @@ namespace Baubit.DI.Test.ModuleRegistry
     {
     }
 }
-

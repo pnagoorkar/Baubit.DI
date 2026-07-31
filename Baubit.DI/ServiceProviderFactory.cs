@@ -96,28 +96,16 @@ namespace Baubit.DI
         /// </remarks>
         public abstract void Load(TContainerBuilder containerBuilder);
 
-        /// <summary>
-        /// Configures the host application builder to use this service provider factory.
-        /// </summary>
-        /// <typeparam name="THostApplicationBuilder">The type of host application builder.</typeparam>
-        /// <param name="hostApplicationBuilder">The host application builder to configure.</param>
-        /// <returns>A result containing the configured host application builder, or failure information.</returns>
-        /// <remarks>
-        /// This method configures the host builder to use the internal factory and load method.
-        /// </remarks>
-        public Result<THostApplicationBuilder> UseConfiguredServiceProviderFactory<THostApplicationBuilder>(THostApplicationBuilder hostApplicationBuilder) where THostApplicationBuilder : IHostApplicationBuilder
+        /// <inheritdoc/>
+        public TContainerBuilder CreateBuilder(IServiceCollection services)
         {
-            hostApplicationBuilder.ConfigureContainer(InternalFactory, Load);
-            return hostApplicationBuilder;
+            var containerBuilder = InternalFactory.CreateBuilder(services);
+            Load(containerBuilder);
+            return containerBuilder;
         }
 
-        ///<inheritdoc/>
-        public IServiceProvider CreateServiceProvider(IServiceCollection services = default)
-        {
-            var containerBuilder = InternalFactory.CreateBuilder(services ?? new ServiceCollection());
-            Load(containerBuilder);
-            return InternalFactory.CreateServiceProvider(containerBuilder);
-        }
+        /// <inheritdoc/>
+        public IServiceProvider CreateServiceProvider(TContainerBuilder containerBuilder) => InternalFactory.CreateServiceProvider(containerBuilder);
     }
 
     /// <summary>
@@ -131,15 +119,12 @@ namespace Baubit.DI
     /// </remarks>
     public class ServiceProviderFactory : ServiceProviderFactory<IServiceCollection>
     {
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class.
+        /// Initializes a new instance of the <see cref="ServiceProviderFactory"/> class using the default factory and an empty component list.
         /// </summary>
-        /// <param name="defaultServiceProviderFactory">The default .NET service provider factory.</param>
         /// <param name="configuration">The configuration to load modules from.</param>
-        /// <param name="components">Optional array of components containing modules to load programmatically.</param>
-        public ServiceProviderFactory(DefaultServiceProviderFactory defaultServiceProviderFactory,
-                                      IConfiguration configuration,
-                                      IComponent[] components) : base(new DefaultServiceProviderFactory(), configuration, components)
+        public ServiceProviderFactory(IConfiguration configuration) : this(configuration, Array.Empty<IComponent>())
         {
 
         }
@@ -149,7 +134,7 @@ namespace Baubit.DI
         /// </summary>
         /// <param name="configuration">The configuration to load modules from.</param>
         /// <param name="components">Optional array of components containing modules to load programmatically.</param>
-        public ServiceProviderFactory(IConfiguration configuration, IComponent[] components) : this(new DefaultServiceProviderFactory(), configuration, components)
+        public ServiceProviderFactory(IConfiguration configuration, IComponent[] components) : base(new DefaultServiceProviderFactory(), configuration, components)
         {
         }
 
